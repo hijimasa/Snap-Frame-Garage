@@ -33,6 +33,21 @@ test.describe("空キャンバスの開始案内", () => {
     await expect(page.getByText("光っている穴なら接続、床なら仮置き")).toBeVisible();
   });
 
+  test("カタログをおすすめ・検索・全パーツで切り替えられる", async ({ page }) => {
+    await expect(page.locator(".part-card")).toHaveCount(8);
+    await expect(page.getByText("まず置く土台におすすめ")).toBeVisible();
+
+    await page.getByRole("searchbox", { name: "パーツを検索" }).fill("PB-L");
+    await expect(page.locator(".part-card")).toHaveCount(1);
+    await expect(page.getByText("パワーボックスL(辞書)")).toBeVisible();
+
+    await page.getByRole("searchbox", { name: "パーツを検索" }).clear();
+    await page.getByRole("button", { name: "すべて" }).click();
+    await expect(page.locator(".part-card")).toHaveCount(0);
+    await page.getByRole("button", { name: /ほね・いた/ }).click();
+    await expect(page.locator(".part-card")).toHaveCount(15);
+  });
+
   test("ひながた選択を開くと開始案内と競合しない", async ({ page }) => {
     const start = page.getByRole("region", { name: "ロボット作りを始める" });
     await page.getByRole("button", { name: "ひながたから始める" }).click();

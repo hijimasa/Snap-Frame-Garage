@@ -124,6 +124,57 @@ body,
   padding: 10px 12px 6px;
   color: #f5c211;
 }
+.catalog-controls {
+  padding: 2px 8px 10px;
+}
+.catalog-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.catalog-tabs .mini {
+  padding: 7px 6px;
+}
+.catalog-search input {
+  width: 100%;
+  padding: 7px 9px;
+  color: #e8eaf0;
+  background: #1c1f26;
+  border: 1px solid #414a5c;
+  border-radius: 8px;
+  font: inherit;
+}
+.catalog-search input:focus {
+  border-color: #35c5e4;
+  outline: 2px solid rgba(53, 197, 228, 0.25);
+}
+.catalog-lead,
+.catalog-result-count,
+.catalog-empty {
+  padding: 0 10px 8px;
+  color: #8a93a8;
+  font-size: 12px;
+}
+.catalog-recommended,
+.catalog-results {
+  padding-bottom: 8px;
+}
+.part-reason {
+  color: #7ce38b;
+  font-size: 12px;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 .cat-header {
   width: 100%;
   text-align: left;
