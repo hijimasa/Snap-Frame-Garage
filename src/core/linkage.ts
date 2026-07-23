@@ -320,34 +320,51 @@ export function solveDisplayAngles(
     (j) => j.type === "passive" && !j.isLoop && !j.locked && j.parentLink !== undefined
   );
 
-  const tmpA = new Vector3();
-  const tmpB = new Vector3();
-  const evalR = (x: Float64Array): number[] => {
-    const angles: Record<string, number> = { ...activeDeg };
-    vars.forEach((j, i) => {
-      angles[j.id] = x[i] / DEG;
-    });
-    const deltas = linkDeltas(asm, angles);
-    const r: number[] = [];
-    for (const c of pre) {
-      const da = deltas.get(c.la);
-      const db = deltas.get(c.lb);
-      tmpA.copy(c.pa);
-      tmpB.copy(c.pb);
-      if (da) tmpA.applyMatrix4(da);
-      if (db) tmpB.applyMatrix4(db);
-      r.push(tmpA.x - tmpB.x - c.diff0.x, tmpA.y - tmpB.y - c.diff0.y, tmpA.z - tmpB.z - c.diff0.z);
-    }
-    return r;
-  };
+  const activeJoints = asm.joints.filter((j) => j.type === "active" && !j.locked);
+  const previousActive = Object.fromEntries(
+    activeJoints.map((j) => [j.id, warmStart?.[j.id] ?? 0])
+  );
+  const maxActiveDelta = activeJoints.reduce(
+    (max, j) => Math.max(max, Math.abs((activeDeg[j.id] ?? 0) - previousActive[j.id])),
+    0
+  );
+  // スライダーのトラッククリックなどで入力が大きく飛んでも、8°刻みで連続な枝を追う。
+  const steps = warmStart ? Math.max(1, Math.ceil(maxActiveDelta / 8)) : 1;
+  let running = warmStart ? { ...warmStart } : {};
 
-  const x0 = warmStart
-    ? Float64Array.from(vars.map((j) => (warmStart[j.id] ?? 0) * DEG))
-    : undefined;
-  const { x } = solveGN(vars.length, evalR, 25, x0);
-  const out: Record<string, number> = { ...activeDeg };
-  vars.forEach((j, i) => {
-    out[j.id] = x[i] / DEG;
-  });
-  return out;
+  for (let step = 1; step <= steps; step++) {
+    const t = step / steps;
+    const stepActive: Record<string, number> = {};
+    for (const j of activeJoints) {
+      const from = previousActive[j.id];
+      stepActive[j.id] = from + ((activeDeg[j.id] ?? 0) - from) * t;
+    }
+    const tmpA = new Vector3();
+    const tmpB = new Vector3();
+    const evalR = (x: Float64Array): number[] => {
+      const angles: Record<string, number> = { ...stepActive };
+      vars.forEach((j, i) => {
+        angles[j.id] = x[i] / DEG;
+      });
+      const deltas = linkDeltas(asm, angles);
+      const r: number[] = [];
+      for (const c of pre) {
+        const da = deltas.get(c.la);
+        const db = deltas.get(c.lb);
+        tmpA.copy(c.pa);
+        tmpB.copy(c.pb);
+        if (da) tmpA.applyMatrix4(da);
+        if (db) tmpB.applyMatrix4(db);
+        r.push(tmpA.x - tmpB.x - c.diff0.x, tmpA.y - tmpB.y - c.diff0.y, tmpA.z - tmpB.z - c.diff0.z);
+      }
+      return r;
+    };
+    const x0 = Float64Array.from(vars.map((j) => (running[j.id] ?? 0) * DEG));
+    const { x } = solveGN(vars.length, evalR, 25, x0);
+    running = { ...stepActive };
+    vars.forEach((j, i) => {
+      running[j.id] = x[i] / DEG;
+    });
+  }
+  return running;
 }

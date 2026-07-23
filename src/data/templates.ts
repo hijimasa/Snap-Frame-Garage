@@ -151,11 +151,16 @@ class Tpl {
   holeAtYZ(partId: string, y: number, z: number): HoleRef {
     const inst = this.model.parts.find((p) => p.id === partId)!;
     const M = this.poses.get(partId)!;
+    let nearest: { ref: HoleRef; y: number; z: number; distance: number } | undefined;
     for (const h of holesOf(getDef(inst.defId))) {
       const w = h.posMm.clone().applyMatrix4(M);
       if (Math.abs(w.y - y) < 0.6 && Math.abs(w.z - z) < 0.6) return h.ref;
+      const distance = Math.hypot(w.y - y, w.z - z);
+      if (!nearest || distance < nearest.distance) nearest = { ref: h.ref, y: w.y, z: w.z, distance };
     }
-    throw new Error(`template: no hole at yz=(${y},${z}) on ${inst.defId}`);
+    throw new Error(
+      `template: no hole at yz=(${y},${z}) on ${inst.defId}; nearest=(${nearest?.y},${nearest?.z})`
+    );
   }
 
   /** 追いピン(ループ接続)。テンプレートではsettleで厳密に閉じるので位置チェックはしない */
@@ -419,7 +424,7 @@ function buildHexapod(): RobotModel {
 }
 
 // ---------------------------------------------------------------------------
-// テオヤンセン機構 4足(左右モータ各1つ・180°位相の前後脚)
+// テオヤンセン機構 8足(前後に分離した4足モジュール・左右前後モータ各1つ)
 // リンク長はホーリーナンバーを5mmグリッドで再設計したもの。
 // 全回転ジャムなし・特異マージン7.7mm(原寸の6倍=ソルバが安定)・歩幅51mm・リフト13mm
 // を2D掃引の総当たり探索で確認済み:
@@ -481,16 +486,9 @@ function buildJansenLeg(
   axle: { y: number; z: number },
   Qworld: { y: number; z: number },
   my: 1 | -1, // +1=前向き脚 / -1=後向き(鏡像)脚
-  sx: 1 | -1 // 体の左右(ほねの重ね方向にだけ使う)
+  sx: 1 | -1, // 体の左右(ほねの重ね方向にだけ使う)
+  tint: string
 ): void {
-  const tint =
-    sx === 1
-      ? my === 1
-        ? "#4aa3df"
-        : "#f28e2b"
-      : my === 1
-        ? "#59a14f"
-        : "#e15759";
   const Qu: P2 = [my * (Qworld.y - axle.y), Qworld.z - axle.z];
   const n = jansenNodes(Qu);
   // u空間 → world(y,z)
@@ -546,63 +544,88 @@ function buildJansenLeg(
 }
 
 function buildStrandbeest(): RobotModel {
-  const t = new Tpl("ヤンセンの4ほんあし");
+  const t = new Tpl("ヤンセンの8ほんあし");
   const body = t.free("FR-P0612", [0, 0, 1.5]);
-  // 対向する前後脚の足先が同じ高さになる位相。初期姿勢で4点接地する。
-  const THETA0 = 0;
-
+  // 前後モジュールを80mm離し、後側を90°進める。各モジュール内の2脚は
+  // ダブルクランクで180°差になるため、全体では0/90/180/270°の4位相を
+  // 左右一対ずつ持つ。シミュレータでも一度に脚が抜けにくい構成。
+  const modules = [
+    { bodyCol: 3, theta: 0 },
+    { bodyCol: 19, theta: 90 },
+  ] as const;
+  const legColors = ["#4aa3df", "#f28e2b", "#59a14f", "#e15759", "#76b7b2", "#edc949", "#af7aa1", "#ff9da7"];
   const servos: string[] = [];
-  for (const sx of [1, -1] as const) {
-    // 体のふちの金具 → たての側板(60×120を縦に)
-    const bracket = t.attach(body, gi("FR-P0612", 0, sx === 1 ? 11 : 0, 11), "JT-BRmic", g(0, 0), {
-      orient: [{ axisLocal: [1, 0, 0], targetWorld: [sx, 0, 0] }],
-    });
-    const sidePlate = t.attach(bracket, g(1, 0), "FR-P0612", gi("FR-P0612", 0, 0, 11), {
-      orient: [
-        { axisLocal: [0, 0, 1], targetWorld: [sx, 0, 0], weight: 2 }, // 板面は横向き
-        { axisLocal: [1, 0, 0], targetWorld: [0, 0, -1] }, // 下へぶら下げる
-      ],
-      trySide: true,
-    });
-    // 車輪用サーボ:側板のうち側に底面マウント(軸は外向き=機構面に垂直)。
-    // 左右で取付穴を鏡像に選び、軸の高さをそろえる
-    const servo = t.attach(sidePlate, gi("FR-P0612", 0, 2, 11), "SV-WHEEL", sx === 1 ? g(0, 0) : g(0, 1), {
-      orient: [
-        { axisLocal: [0, 0, 1], targetWorld: [sx, 0, 0], weight: 2 },
-        { axisLocal: [1, 0, 0], targetWorld: [0, 1, 0] },
-      ],
-      trySide: true,
-    });
-    servos.push(servo);
-    const drive = t.worldPoint(servo, [0, 0, 13]);
-    const axle = { y: drive.y, z: drive.z };
-
-    // ダブルクランク:駆動穴にほね(中長)のまんなかを固定 → 両端±15mmがクランクピン
-    const crank = t.attach(servo, { special: "drive" }, "FR-B075", g(0, 7), {
-      pins: 2,
-      orient: [{ axisLocal: [1, 0, 0], targetWorld: [0, Math.cos(THETA0), Math.sin(THETA0)] }],
-      angles: FINE_ANGLES,
-    });
-    const Q1 = t.worldPoint(crank, [15, 0, 0]);
-    const Q2 = t.worldPoint(crank, [-15, 0, 0]);
-
-    // 180°位相のクランクピン2つに、前脚・後脚を1本ずつ接続。
-    // 同じピンへ鏡像脚を重ねると4層のリンクが同一平面で交差して判別不能になるため、
-    // 1ピン1脚の実機に近い読みやすい構成にする(左右合計4脚)。
-    const pins: { Q: Vector3; hole: HoleRef }[] = [
-      { Q: Q1, hole: g(0, 10) }, // ローカル+15mm
-      { Q: Q2, hole: g(0, 4) }, // ローカル-15mm
-    ];
-    buildJansenLeg(t, sidePlate, crank, pins[0].hole, axle, { y: pins[0].Q.y, z: pins[0].Q.z }, 1, sx);
-    buildJansenLeg(t, sidePlate, crank, pins[1].hole, axle, { y: pins[1].Q.y, z: pins[1].Q.z }, -1, sx);
+  for (const [moduleIndex, module] of modules.entries()) {
+    for (const sx of [1, -1] as const) {
+      // 本体からL字アングルを外へ伸ばし、その立ち上がり面で側板を支える。
+      // 駆動穴へ直接つながるのは後述のcrankだけで、この支持経路はサーボ本体側に固定される。
+      const outrigger = t.attach(
+        body,
+        gi("FR-P0612", 0, sx === 1 ? 11 : 0, module.bodyCol),
+        "FR-L030",
+        g(0, 0),
+        {
+          pins: 2,
+          orient: [
+            { axisLocal: [1, 0, 0], targetWorld: [sx, 0, 0], weight: 2 },
+            { axisLocal: [0, 1, 0], targetWorld: [0, 1, 0] },
+          ],
+        }
+      );
+      // 90°位相側は足軌跡の最下点が約4mm低いため、5mmグリッド1段ぶん
+      // 側板を持ち上げる。柔らかい実機の脚と違い剛体シミュレータでも、
+      // 前後の足先がほぼ同じ床面に載るようにする補正。
+      const sidePlate = t.attach(
+        outrigger,
+        g(1, 4),
+        "FR-P0612",
+        gi("FR-P0612", 0, moduleIndex === 0 ? 0 : 1, 11),
+        {
+          orient: [
+            { axisLocal: [0, 0, 1], targetWorld: [sx, 0, 0], weight: 2 },
+            { axisLocal: [1, 0, 0], targetWorld: [0, 0, -1] },
+          ],
+          trySide: true,
+        }
+      );
+      const servo = t.attach(sidePlate, gi("FR-P0612", 0, 2, 11), "SV-WHEEL", sx === 1 ? g(0, 0) : g(0, 1), {
+        orient: [
+          { axisLocal: [0, 0, 1], targetWorld: [sx, 0, 0], weight: 2 },
+          { axisLocal: [1, 0, 0], targetWorld: [0, 1, 0] },
+        ],
+        trySide: true,
+      });
+      servos.push(servo);
+      const drivePoint = t.worldPoint(servo, [0, 0, 13]);
+      const axle = { y: drivePoint.y, z: drivePoint.z };
+      const thetaRad = (module.theta * Math.PI) / 180;
+      const crank = t.attach(servo, { special: "drive" }, "FR-B075", g(0, 7), {
+        pins: 2,
+        orient: [{ axisLocal: [1, 0, 0], targetWorld: [0, Math.cos(thetaRad), Math.sin(thetaRad)] }],
+        angles: FINE_ANGLES,
+      });
+      const pins: { Q: Vector3; hole: HoleRef }[] = [
+        { Q: t.worldPoint(crank, [15, 0, 0]), hole: g(0, 10) },
+        { Q: t.worldPoint(crank, [-15, 0, 0]), hole: g(0, 4) },
+      ];
+      const colorBase = moduleIndex * 4 + (sx === 1 ? 0 : 2);
+      buildJansenLeg(
+        t, sidePlate, crank, pins[0].hole, axle, { y: pins[0].Q.y, z: pins[0].Q.z },
+        1, sx, legColors[colorBase]
+      );
+      buildJansenLeg(
+        t, sidePlate, crank, pins[1].hole, axle, { y: pins[1].Q.y, z: pins[1].Q.z },
+        -1, sx, legColors[colorBase + 1]
+      );
+    }
   }
 
   // パワーボックスS(コスト2)としょっかく
   t.attach(body, gi("FR-P0612", 0, 5, 11), "PB-S", g(0, 2), {});
   t.attach(body, gi("FR-P0612", 0, 3, 22), "DC-ANT", g(0, 0), { pins: 1, intent: "decorative" });
   t.attach(body, gi("FR-P0612", 0, 8, 22), "DC-ANT", g(0, 0), { pins: 1, intent: "decorative" });
-  t.map(servos[0], "rightStickY");
-  t.map(servos[1], "leftStickY");
+  // 同じ側の前後モータを同じスティックへ割り当てる。
+  servos.forEach((servo, i) => t.map(servo, i % 2 === 0 ? "rightStickY" : "leftStickY"));
   return t.done();
 }
 
@@ -646,8 +669,8 @@ export const TEMPLATES: TemplateInfo[] = [
   {
     id: "strandbeest",
     emoji: "🦕",
-    name: "ヤンセンの4ほんあし",
-    desc: "左右2組のテオヤンセン機構をモータ2つで回す4足。色ごとに1本の脚を追えるよ",
+    name: "ヤンセンの8ほんあし",
+    desc: "前後を分けた4モータ・8足。4位相で接地が途切れにくく、色ごとに1本の脚を追えるよ",
     build: buildStrandbeest,
   },
 ];

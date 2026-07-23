@@ -307,11 +307,20 @@ export function Viewport() {
     [model, asm, summary]
   );
   const holeMode = pendingDefId !== null || linkMode;
+  const displayWarmRef = useRef<{ model: typeof model; angles: Record<string, number> }>({
+    model,
+    angles: {},
+  });
   // ポーズプレビュー:からくり(ループピン)があれば、受動関節を拘束を保つよう連動させる
-  const displayAngles = useMemo(
-    () => (holeMode ? {} : solveDisplayAngles(model, asm, poseAngles)),
-    [model, asm, poseAngles, holeMode]
-  );
+  const displayAngles = useMemo(() => {
+    if (displayWarmRef.current.model !== model) {
+      displayWarmRef.current = { model, angles: {} };
+    }
+    if (holeMode) return {};
+    const solved = solveDisplayAngles(model, asm, poseAngles, displayWarmRef.current.angles);
+    displayWarmRef.current.angles = solved;
+    return solved;
+  }, [model, asm, poseAngles, holeMode]);
   const deltas = useMemo(() => linkDeltas(asm, displayAngles), [asm, displayAngles]);
 
   const displayMs = useMemo(() => {

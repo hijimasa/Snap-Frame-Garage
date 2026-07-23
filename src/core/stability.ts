@@ -121,7 +121,7 @@ function signedDistanceToHull(hull: [number, number][], p: [number, number]): nu
 
 // 接地とみなす高さの許容。3mm板の上に載った部品(浮き3mm)を接地扱いに
 // しないよう板厚より小さく、意図的な0.5mm浮き(キャスター等)は拾える値にする
-const CONTACT_TOL_MM = 1.2;
+const CONTACT_TOL_MM = 1.4;
 const WARN_MARGIN_MM = 8;
 
 export function computeStability(
