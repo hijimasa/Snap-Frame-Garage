@@ -38,6 +38,7 @@ interface AttachOpts {
   angles?: number[]; // 探索候補(既定 0/90/180/270)
   trySide?: boolean;
   tryFlip?: boolean;
+  intent?: "decorative";
 }
 
 class Tpl {
@@ -115,6 +116,7 @@ class Tpl {
       angleDeg: angle,
       side,
       flip,
+      intent: opts.intent,
     };
     this.model.connections.push(conn);
     this.poses.set(id, computeAttachment(parentM, ph, ch, angle, side, flip));
@@ -289,7 +291,10 @@ function buildDog(): RobotModel {
   t.attach(body, gi("FR-P0612", 0, 5, 11), "PB-S", g(0, 2), {});
   // あたまとしっぽ
   t.attach(body, gi("FR-P0612", 0, 5, 22), "DC-DOME", g(0, 0), {});
-  t.attach(body, gi("FR-P0612", 0, 5, 1), "DC-ANT", g(0, 0), { pins: 1 }); // ぶらぶら尻尾
+  t.attach(body, gi("FR-P0612", 0, 5, 1), "DC-ANT", g(0, 0), {
+    pins: 1,
+    intent: "decorative",
+  }); // ぶらぶら尻尾
   servos.forEach((s, i) => t.map(s, INPUT_OPTIONS[i % (INPUT_OPTIONS.length - 1)]));
   return t.done();
 }
@@ -327,11 +332,13 @@ function buildBiped(): RobotModel {
   // うで:1ピンでぶらぶら(受動関節のデモ)
   t.attach(shoulder, g(0, 0), "FR-B030", g(0, 0), {
     pins: 1,
+    intent: "decorative",
     orient: [{ axisLocal: [1, 0, 0], targetWorld: DOWN }],
     trySide: true,
   });
   t.attach(shoulder, g(0, 11), "FR-B030", g(0, 0), {
     pins: 1,
+    intent: "decorative",
     orient: [{ axisLocal: [1, 0, 0], targetWorld: DOWN }],
     trySide: true,
   });
@@ -396,8 +403,8 @@ function buildHexapod(): RobotModel {
   }
   // パワーボックスS(胴体中央)+ しょっかく
   t.attach(body, gi("FR-P0612", 0, 5, 11), "PB-S", g(0, 2), {});
-  t.attach(body, gi("FR-P0612", 0, 3, 22), "DC-ANT", g(0, 0), { pins: 1 });
-  t.attach(body, gi("FR-P0612", 0, 8, 22), "DC-ANT", g(0, 0), { pins: 1 });
+  t.attach(body, gi("FR-P0612", 0, 3, 22), "DC-ANT", g(0, 0), { pins: 1, intent: "decorative" });
+  t.attach(body, gi("FR-P0612", 0, 8, 22), "DC-ANT", g(0, 0), { pins: 1, intent: "decorative" });
   const inputs: (typeof INPUT_OPTIONS)[number][] = [
     "rightStickY", "rightStickX", "buttonsAB", "leftStickY", "leftStickX", "buttonsXY",
   ];
@@ -577,8 +584,8 @@ function buildStrandbeest(): RobotModel {
 
   // パワーボックスS(コスト2)としょっかく
   t.attach(body, gi("FR-P0612", 0, 5, 11), "PB-S", g(0, 2), {});
-  t.attach(body, gi("FR-P0612", 0, 3, 22), "DC-ANT", g(0, 0), { pins: 1 });
-  t.attach(body, gi("FR-P0612", 0, 8, 22), "DC-ANT", g(0, 0), { pins: 1 });
+  t.attach(body, gi("FR-P0612", 0, 3, 22), "DC-ANT", g(0, 0), { pins: 1, intent: "decorative" });
+  t.attach(body, gi("FR-P0612", 0, 8, 22), "DC-ANT", g(0, 0), { pins: 1, intent: "decorative" });
   t.map(servos[0], "rightStickY");
   t.map(servos[1], "leftStickY");
   return t.done();

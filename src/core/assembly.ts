@@ -37,6 +37,7 @@ export interface Assembly {
   treeOrder: number[]; // rootから幅優先のリンク順
   parentJointOfLink: Map<number, AssemblyJoint>;
   danglingCount: number; // ぶらぶらメーター(橋になっている受動関節の数)
+  danglingConnectionIds: string[];
   hasLoop: boolean;
   warnings: string[];
   orphanParts: string[]; // tree接続が壊れて姿勢を導出できなかったパーツ
@@ -348,7 +349,8 @@ export function buildAssembly(model: RobotModel): Assembly {
 
   // ぶらぶらメーター:受動関節のうち、どのサイクルにも属さない(=橋)ものを数える。
   // 閉じたからくりの関節はサイクル上にあるので除外される(別紙2§7.2)。
-  const danglingCount = countBridgePassiveJoints(linkBodies.length, joints);
+  const danglingConnectionIds = bridgePassiveJointIds(linkBodies.length, joints);
+  const danglingCount = danglingConnectionIds.length;
 
   return {
     poses,
@@ -360,13 +362,14 @@ export function buildAssembly(model: RobotModel): Assembly {
     treeOrder,
     parentJointOfLink,
     danglingCount,
+    danglingConnectionIds,
     hasLoop,
     warnings,
     orphanParts: orphans,
   };
 }
 
-function countBridgePassiveJoints(nLinks: number, joints: AssemblyJoint[]): number {
+function bridgePassiveJointIds(nLinks: number, joints: AssemblyJoint[]): string[] {
   const edges = joints.filter((j) => !j.locked);
   const adj = new Map<number, { to: number; ei: number }[]>();
   edges.forEach((j, ei) => {
@@ -393,7 +396,10 @@ function countBridgePassiveJoints(nLinks: number, joints: AssemblyJoint[]): numb
     }
   };
   for (let i = 0; i < nLinks; i++) if (disc[i] === -1 && (adj.get(i)?.length ?? 0) > 0) dfs(i, -1);
-  return edges.filter((j, ei) => j.type === "passive" && isBridge[ei]).length;
+  return edges
+    .filter((j, ei) => j.type === "passive" && isBridge[ei])
+    .map((j) => j.connectionId)
+    .filter((id): id is string => id !== undefined);
 }
 
 /**

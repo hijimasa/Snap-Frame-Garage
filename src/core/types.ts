@@ -143,6 +143,8 @@ export interface Connection {
    * 島の再ルート(接続の親子反転)を厳密に表現するために必要。UIからは直接触らない。
    */
   flip?: boolean;
+  /** テンプレートなどで意図的に揺らす尻尾・腕・触角 */
+  intent?: "decorative";
 }
 
 export interface ControlMapping {

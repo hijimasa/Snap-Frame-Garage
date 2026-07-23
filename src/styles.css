@@ -15,6 +15,7 @@ body,
   display: flex;
   flex-direction: column;
   height: 100%;
+  overflow: hidden;
 }
 .topbar {
   display: flex;
@@ -93,6 +94,11 @@ body,
   flex: 1;
   display: flex;
   min-height: 0;
+  position: relative;
+}
+.drawer-toggle,
+.drawer-scrim {
+  display: none;
 }
 .left {
   width: 250px;
@@ -572,6 +578,9 @@ body,
   outline: 2px solid rgba(53, 197, 228, 0.45);
   outline-offset: 1px;
 }
+.decor-ok {
+  color: #7ce38b;
+}
 .overlay {
   position: fixed;
   inset: 0;
@@ -715,6 +724,46 @@ body,
   .topbar .toolbtn {
     padding-inline: 9px;
   }
+  .drawer-toggle {
+    display: inline-flex;
+    min-width: 44px;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+  .drawer-panel {
+    position: absolute;
+    inset-block: 0;
+    z-index: 11;
+    width: min(340px, calc(100vw - 56px));
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    visibility: hidden;
+    pointer-events: none;
+    transition: transform 180ms ease, visibility 180ms;
+  }
+  .left.drawer-panel {
+    left: 0;
+    transform: translateX(-100%);
+  }
+  .right.drawer-panel {
+    right: 0;
+    transform: translateX(100%);
+  }
+  .drawer-panel.drawer-open {
+    transform: translateX(0);
+    visibility: visible;
+    pointer-events: auto;
+  }
+  .drawer-scrim {
+    display: block;
+    position: absolute;
+    inset: 0;
+    z-index: 8;
+    padding: 0;
+    border: 0;
+    background: rgba(0, 0, 0, 0.4);
+  }
 }
 
 @media (max-width: 820px) {
@@ -722,6 +771,9 @@ body,
     width: 125px;
   }
   .mode-label {
+    display: none;
+  }
+  .drawer-toggle span {
     display: none;
   }
 }

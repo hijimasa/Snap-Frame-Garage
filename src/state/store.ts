@@ -255,14 +255,20 @@ export const useStore = create<Store>((set, get) => ({
     const faces = mountingFacesOf(def);
     const child = faces[pendingMountFace % Math.max(1, faces.length)] ?? defaultAttachHole(def);
     if (!child) {
-      showToast("このパーツには取付穴がないみたい");
+      showToast("このパーツには取付穴がないよ。床に置くか、穴のあるパーツを選んでね");
       return;
     }
     const parentRef = parseHoleKey(parentHoleKey);
     const parentInst = model.parts.find((p) => p.id === parentPartId);
-    if (!parentInst) return;
+    if (!parentInst) {
+      showToast("選んだパーツが見つからなくなったよ。光っている穴をもう一度選んでね");
+      return;
+    }
     const parentHole = findHole(getDef(parentInst.defId), parentRef);
-    if (!parentHole) return;
+    if (!parentHole) {
+      showToast("選んだ穴が見つからなくなったよ。光っている穴をもう一度選んでね");
+      return;
+    }
 
     const id = `p${model.nextSeq}`;
     const conn: Connection = {
@@ -301,14 +307,14 @@ export const useStore = create<Store>((set, get) => ({
   pinHoles(a, b, coincident) {
     const { model, commit, showToast } = get();
     if (a.partId === b.partId) {
-      showToast("同じパーツ同士は留められないよ");
+      showToast("同じパーツの穴どうしはつなげないよ。別のパーツの穴を選んでね");
       return false;
     }
     const sameIsland = islandRootOf(model, a.partId) === islandRootOf(model, b.partId);
     if (sameIsland) {
       // 追いピン(からくり):穴が実際に重なっている必要がある
       if (!coincident) {
-        showToast("その2つの穴は重なってないみたい。もっと近い穴をえらんでね");
+        showToast("穴が重なっていないよ。パーツを近づけて、穴が光ってからもう一度選んでね");
         return false;
       }
       const conn: Connection = {
@@ -335,7 +341,7 @@ export const useStore = create<Store>((set, get) => ({
       2
     );
     if (!joined) {
-      showToast("そこはつなげられなかった…ちがう穴でためしてみて");
+      showToast("この向きのままではつなげられなかったよ。動かすパーツをいったん外し、穴へ近づけて試してね");
       return false;
     }
     commit(joined);
@@ -609,9 +615,21 @@ export const useStore = create<Store>((set, get) => ({
   },
   loadTemplate(id) {
     const { commit, showToast } = get();
-    commit(buildTemplate(id));
-    set({ selection: null, pendingDefId: null, linkMode: false, poseAngles: {} });
-    showToast("ひながたを組み立てたよ!ここから自由に改造してね");
+    const template = buildTemplate(id);
+    const children = new Set(
+      template.connections.filter((c) => c.kind === "tree").map((c) => c.childPart)
+    );
+    const representative =
+      template.parts.find((p) => !children.has(p.id))?.id ?? template.parts[0]?.id ?? null;
+    commit(template);
+    set({
+      selection: representative,
+      pendingDefId: null,
+      linkMode: false,
+      linkFirstHole: null,
+      poseAngles: {},
+    });
+    showToast("胴体を選んだよ。近くのボタンか右の調整から改造できるよ");
   },
   loadProjectJson(json) {
     const { commit } = get();

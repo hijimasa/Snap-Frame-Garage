@@ -54,6 +54,10 @@ describe.each(TEMPLATES)("テンプレート: $id", (tpl) => {
       strandbeest: 2, // しょっかく(脚の受動関節80個はすべてループ内=0扱い)
     };
     expect(asm.danglingCount).toBe(EXPECTED[tpl.id]);
+    const decorative = asm.danglingConnectionIds.filter(
+      (id) => model.connections.find((c) => c.id === id)?.intent === "decorative"
+    );
+    expect(decorative).toHaveLength(EXPECTED[tpl.id]);
   });
 });
 

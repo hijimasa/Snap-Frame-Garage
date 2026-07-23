@@ -37,6 +37,7 @@ export default function App() {
   const [templateOpen, setTemplateOpen] = useState(false);
   const [fileMenuOpen, setFileMenuOpen] = useState(false);
   const [helpMenuOpen, setHelpMenuOpen] = useState(false);
+  const [tabletDrawer, setTabletDrawer] = useState<"catalog" | "inspector" | null>(null);
   // はじめての起動では説明ポップアップを開く
   const [onboardOpen, setOnboardOpen] = useState(() => {
     try {
@@ -62,11 +63,16 @@ export default function App() {
         setLinkMode(false);
         setFileMenuOpen(false);
         setHelpMenuOpen(false);
+        setTabletDrawer(null);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [undo, redo, setPendingDef, setLinkMode]);
+
+  useEffect(() => {
+    if (pendingDefId) setTabletDrawer(null);
+  }, [pendingDefId]);
 
   const saveFile = () => {
     const json = saveProjectJson();
@@ -97,6 +103,24 @@ export default function App() {
         </button>
         <button className="toolbtn" onClick={redo} disabled={future.length === 0} title="やり直す (Ctrl+Y)">
           ↷
+        </button>
+        <button
+          className={`toolbtn drawer-toggle${tabletDrawer === "catalog" ? " active" : ""}`}
+          aria-label="パーツカタログを開く"
+          aria-controls="catalog-drawer"
+          aria-expanded={tabletDrawer === "catalog"}
+          onClick={() => setTabletDrawer((v) => (v === "catalog" ? null : "catalog"))}
+        >
+          🧱 <span>パーツ</span>
+        </button>
+        <button
+          className={`toolbtn drawer-toggle${tabletDrawer === "inspector" ? " active" : ""}`}
+          aria-label="パーツの調整を開く"
+          aria-controls="inspector-drawer"
+          aria-expanded={tabletDrawer === "inspector"}
+          onClick={() => setTabletDrawer((v) => (v === "inspector" ? null : "inspector"))}
+        >
+          🛠 <span>調整</span>
         </button>
         <span className="spacer" />
         <button
@@ -213,7 +237,10 @@ export default function App() {
       </header>
 
       <div className="main">
-        <aside className="left">
+        <aside
+          id="catalog-drawer"
+          className={`left drawer-panel${tabletDrawer === "catalog" ? " drawer-open" : ""}`}
+        >
           <CatalogPanel />
         </aside>
         <div className="center">
@@ -264,7 +291,17 @@ export default function App() {
             </div>
           )}
         </div>
-        <aside className="right">
+        {tabletDrawer && (
+          <button
+            className="drawer-scrim"
+            aria-label="パネルを閉じる"
+            onClick={() => setTabletDrawer(null)}
+          />
+        )}
+        <aside
+          id="inspector-drawer"
+          className={`right drawer-panel${tabletDrawer === "inspector" ? " drawer-open" : ""}`}
+        >
           <Inspector />
         </aside>
       </div>

@@ -393,11 +393,22 @@ export function Viewport() {
       if (!firstHole) return;
       const a = holeWorldPos(asm, linkFirstHole.partId, firstHole);
       const b = holeWorldPos(asm, h.partId, h.hole);
-      if (!a || !b) return;
+      if (!a || !b) {
+        showToast("選んだ穴が見つからなくなったよ。最初の穴から選び直してね");
+        setLinkFirstHole(null);
+        return;
+      }
       const thickOk = (firstHole.thicknessMm + h.hole.thicknessMm) / 2 + 1.5;
-      const coincident = a.p.distanceTo(b.p) <= thickOk && Math.abs(a.n.dot(b.n)) >= 0.9;
-      pinHoles(linkFirstHole, { partId: h.partId, holeKey: h.hole.key }, coincident);
-      setLinkFirstHole(null);
+      if (a.p.distanceTo(b.p) > thickOk) {
+        showToast("穴の中心が離れているよ。パーツをドラッグして、穴が光るまで近づけてね");
+        return;
+      }
+      if (Math.abs(a.n.dot(b.n)) < 0.9) {
+        showToast("穴の向きが合っていないよ。パーツを90°回して、正面どうしに合わせてね");
+        return;
+      }
+      const ok = pinHoles(linkFirstHole, { partId: h.partId, holeKey: h.hole.key }, true);
+      if (ok) setLinkFirstHole(null);
     }
   };
 

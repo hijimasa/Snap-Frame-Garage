@@ -326,16 +326,25 @@ function DanglingSection() {
   const asm = useMemo(() => buildAssembly(model), [model]);
   const L = labels(adult);
   if (model.parts.length === 0) return null;
+  const decorative = asm.danglingConnectionIds.filter(
+    (id) => model.connections.find((c) => c.id === id)?.intent === "decorative"
+  ).length;
+  const needsAttention = asm.danglingCount - decorative;
   return (
     <div className="section">
       <div className="section-title">ぶらぶらメーター</div>
       <div className="kv">
         <span>{L.dangling}</span>
-        <b className={asm.danglingCount > 0 ? "warn-text" : "ok-text"}>{asm.danglingCount}</b>
+        <b className={needsAttention > 0 ? "warn-text" : "ok-text"}>{needsAttention}</b>
       </div>
-      {asm.danglingCount > 0 && (
+      {needsAttention > 0 && (
         <div className="hint">
-          ピン1本のところがぶらぶらしてるよ。からくりとして閉じる(輪にする)か、ピン2本で固定してね
+          ⚠ 固定されていない関節があるよ。動かしたいならそのまま、固定するなら対象を選んで「固定する」を押そう
+        </div>
+      )}
+      {decorative > 0 && (
+        <div className="hint decor-ok">
+          🎀 飾りとして動く関節 {decorative}（尻尾・腕・触角なので、このままでOK）
         </div>
       )}
       {asm.hasLoop && <div className="hint">🎡 からくり(閉ループ)発見!MJCFでは動くよ</div>}
@@ -376,7 +385,7 @@ function NextActionSection() {
     body = "中央の案内からおすすめの土台を置くか、ひながたを選ぼう。";
   } else if (selection) {
     icon = "🛠";
-    body = "下のボタンで向きや高さを調整しよう。不要なら削除や切り離しもできるよ。";
+    body = "選んだパーツを改造しよう。3Dの近くのボタンで回す・つなぐ、下の調整で細かく変更できるよ。";
   } else if (gate.ok) {
     icon = "🚀";
     title = "おくり出す準備ができたよ";

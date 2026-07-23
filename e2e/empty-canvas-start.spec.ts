@@ -18,7 +18,7 @@ test.describe("空キャンバスの開始案内", () => {
     await page.getByRole("button", { name: "おすすめの土台を置く" }).click();
     await expect(start).toBeHidden();
     await expect(page.locator(".statusbar").getByText("9 g", { exact: true })).toBeVisible();
-    await expect(page.getByText("下のボタンで向きや高さを調整しよう")).toBeVisible();
+    await expect(page.getByText("選んだパーツを改造しよう")).toBeVisible();
     await expect(page.getByRole("button", { name: "ほかのパーツとつなぐ" })).toBeVisible();
     await expect(
       page.getByRole("toolbar", { name: "選んだパーツのかんたん操作" })
@@ -120,6 +120,43 @@ test.describe("空キャンバスの開始案内", () => {
 
     await expect(page.getByText("できあがったロボットを読みこんで")).toBeVisible();
     await expect(start).toBeHidden();
+  });
+
+  test("ひながた読込後に胴体を選び、飾り関節を警告と区別する", async ({ page }) => {
+    await page.getByRole("button", { name: "ひながたから始める" }).click();
+    await page.locator(".template-card").filter({ hasText: "いぬがた4そく" }).click();
+
+    await expect(page.getByText("選んだパーツを改造しよう")).toBeVisible();
+    await expect(
+      page.getByRole("toolbar", { name: "選んだパーツのかんたん操作" })
+    ).toBeVisible();
+    await expect(page.getByText(/飾りとして動く関節 1/)).toBeVisible();
+    await expect(page.getByText(/固定されていない関節がある/)).toBeHidden();
+  });
+
+  test("タブレットでは左右パネルをドロワーとして切り替える", async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await page.reload();
+
+    const catalog = page.locator("#catalog-drawer");
+    const inspector = page.locator("#inspector-drawer");
+    await expect(catalog).toBeHidden();
+    await expect(inspector).toBeHidden();
+
+    await page.getByRole("button", { name: "パーツカタログを開く" }).click();
+    await expect(catalog).toBeVisible();
+    await page.getByRole("searchbox", { name: "パーツを検索" }).fill("サーボ");
+
+    await page.getByRole("button", { name: "パーツの調整を開く" }).click();
+    await expect(catalog).toBeHidden();
+    await expect(inspector).toBeVisible();
+
+    await page.getByRole("button", { name: "パーツの調整を開く" }).click();
+    await expect(inspector).toBeHidden();
+    await page.getByRole("button", { name: "パーツカタログを開く" }).click();
+    await expect(page.getByRole("searchbox", { name: "パーツを検索" })).toHaveValue("サーボ");
+    await page.keyboard.press("Escape");
+    await expect(catalog).toBeHidden();
   });
 
   for (const viewport of [
