@@ -6,6 +6,7 @@ import { getDef } from "../data/catalog";
 import { defaultAttachHole, holesOf, holeKey, findHole } from "../core/holes";
 import { islandRootOf, subtreeParts } from "../core/assembly";
 import * as edit from "../core/edit";
+import { solveRestLinkage } from "../core/linkage";
 import { defBBoxCorners, defLocalMinZ } from "../core/stability";
 import type { Connection, HoleRef, Material, RobotModel } from "../core/types";
 import { emptyModel } from "../core/types";
@@ -61,6 +62,11 @@ interface Store {
   liftFreePart: (partId: string, deltaZMm: number) => void;
   /** 受動関節(ピン1本のtree接続)のねじり角を直接変更(掴んで回す用) */
   rotateConnAngle: (connId: string, angleDeg: number, save: boolean) => void;
+  /**
+   * 連動つき回転:同じ機構内にループピン(からくり)があれば、
+   * 他の受動関節も拘束を保つように連動して動く。可動限界では動かない。
+   */
+  rotateConnAngleLinked: (connId: string, angleDeg: number, save: boolean) => void;
   detachPart: (partId: string) => void;
   rotateChild: (childPartId: string, deltaDeg: number) => void;
   flipChild: (childPartId: string) => void;
@@ -368,6 +374,41 @@ export const useStore = create<Store>((set, get) => ({
       };
     });
     commit({ ...model, parts });
+  },
+
+  rotateConnAngleLinked(connId, angleDeg, save) {
+    const { model, past, dragStartModel, rotateConnAngle } = get();
+    const solved = solveRestLinkage(model, { connId, angleDeg });
+    if (!solved) {
+      // この機構にループ拘束はない → 単独回転
+      rotateConnAngle(connId, angleDeg, save);
+      return;
+    }
+    if (solved.maxErrMm > 3) {
+      // 可動限界:ループを保てない角度には動かさない(離した時は現状で確定)
+      if (save) {
+        const cur = model.connections.find((c) => c.id === connId);
+        if (cur) rotateConnAngle(connId, cur.angleDeg, true);
+      }
+      return;
+    }
+    const connections = model.connections.map((c) => {
+      const a = solved.angles.get(c.id);
+      return a === undefined ? c : { ...c, angleDeg: Math.round(a * 10) / 10 };
+    });
+    const next = { ...model, connections };
+    if (save) {
+      const base = dragStartModel ?? model;
+      set({ model: next, past: [...past.slice(-99), base], future: [], dragStartModel: null });
+      try {
+        localStorage.setItem(AUTOSAVE_KEY, serializeProject(next));
+      } catch {
+        /* ローカルファースト:保存失敗でも続行 */
+      }
+    } else {
+      if (!dragStartModel) set({ dragStartModel: model });
+      set({ model: next });
+    }
   },
 
   detachPart(partId) {

@@ -16,6 +16,7 @@ import {
 } from "three";
 import { buildAssembly, bodyDisplayMatrix, linkDeltas, type Assembly } from "../core/assembly";
 import { computeAttachment, defaultAttachHole, holesOf, type HoleInfo } from "../core/holes";
+import { solveDisplayAngles } from "../core/linkage";
 import { robotMassSummary } from "../core/mass";
 import {
   buildDragSnapData,
@@ -270,7 +271,7 @@ export function Viewport() {
     theta0: number;
     angle0: number;
   } | null>(null);
-  const rotateConnAngle = useStore((s) => s.rotateConnAngle);
+  const rotateConnAngle = useStore((s) => s.rotateConnAngleLinked);
 
   const asm = useMemo(() => buildAssembly(model), [model]);
   const summary = useMemo(() => robotMassSummary(model, asm), [model, asm]);
@@ -279,10 +280,12 @@ export function Viewport() {
     [model, asm, summary]
   );
   const holeMode = pendingDefId !== null || linkMode;
-  const deltas = useMemo(
-    () => linkDeltas(asm, holeMode ? {} : poseAngles),
-    [asm, poseAngles, holeMode]
+  // ポーズプレビュー:からくり(ループピン)があれば、受動関節を拘束を保つよう連動させる
+  const displayAngles = useMemo(
+    () => (holeMode ? {} : solveDisplayAngles(model, asm, poseAngles)),
+    [model, asm, poseAngles, holeMode]
   );
+  const deltas = useMemo(() => linkDeltas(asm, displayAngles), [asm, displayAngles]);
 
   const displayMs = useMemo(() => {
     const map = new Map<string, { main: Matrix4; horn: Matrix4 | null }>();

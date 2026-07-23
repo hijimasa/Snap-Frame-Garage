@@ -60,8 +60,12 @@ export function basePoseMatrix(inst: { basePose?: { posMm: [number, number, numb
  * rest姿勢の導出。
  * どのtree接続の子でもないパーツ=「島の根」は basePose(自由配置)を使い、
  * 子はtree接続のパラメータから連鎖的に解決する。複数の島を許す。
+ * angleOverrides: 接続ID→角度の上書き(リンク機構ソルバが候補角を評価するときに使う)
  */
-export function computePoses(model: RobotModel): {
+export function computePoses(
+  model: RobotModel,
+  angleOverrides?: Map<string, number>
+): {
   poses: Map<string, Matrix4>;
   orphans: string[];
 } {
@@ -91,7 +95,8 @@ export function computePoses(model: RobotModel): {
       const ph = findHole(getDef(parentInst.defId), conn.parentHole);
       const ch = findHole(getDef(childInst.defId), conn.childHole);
       if (!ph || !ch) continue;
-      poses.set(pid, computeAttachment(parentM, ph, ch, conn.angleDeg, conn.side, conn.flip));
+      const angle = angleOverrides?.get(conn.id) ?? conn.angleDeg;
+      poses.set(pid, computeAttachment(parentM, ph, ch, angle, conn.side, conn.flip));
       pending.delete(pid);
       progress = true;
     }
@@ -247,6 +252,7 @@ export function buildAssembly(model: RobotModel): Assembly {
   const linkOfBody = new Map<BodyId, number>();
   bodies.forEach((b, i) => linkOfBody.set(b, linkIndex.get(rootOfBody[i])!));
 
+  const connKind = new Map(model.connections.map((c) => [c.id, c.kind]));
   const joints: AssemblyJoint[] = rawJoints.map((rj) => {
     const la = linkOfBody.get(rj.bodyA)!;
     const lb = linkOfBody.get(rj.bodyB)!;
@@ -275,6 +281,10 @@ export function buildAssembly(model: RobotModel): Assembly {
     model.parts.length > 0 && linkOfBody.has(model.parts[0].id)
       ? linkOfBody.get(model.parts[0].id)!
       : 0;
+  // 全域木は「tree接続の受動関節+能動関節」を優先して張る(computePosesの親子と一致させる)。
+  // loop接続(追いピン)経由で先に到達すると、駆動エッジがループ扱いになりFKが壊れるため。
+  const isPrimary = (j: AssemblyJoint) =>
+    j.type === "active" || (j.connectionId !== undefined && connKind.get(j.connectionId) === "tree");
   const adj = new Map<number, { joint: AssemblyJoint; other: number }[]>();
   for (const j of joints) {
     if (j.locked) continue;
@@ -286,24 +296,45 @@ export function buildAssembly(model: RobotModel): Assembly {
   const visited = new Set<number>();
   const treeOrder: number[] = [];
   const parentJointOfLink = new Map<number, AssemblyJoint>();
-  // 複数の島(森)を許す:rootLinkから始め、残りの未訪問リンクも順に根として展開
+  const visit = (other: number, joint: AssemblyJoint, from: number) => {
+    visited.add(other);
+    joint.parentLink = from;
+    joint.childLink = other;
+    parentJointOfLink.set(other, joint);
+    treeOrder.push(other);
+  };
   const bfsRoots = [rootLink, ...Array.from({ length: linkBodies.length }, (_, i) => i)];
   for (const start of bfsRoots) {
     if (visited.has(start)) continue;
     visited.add(start);
     treeOrder.push(start);
-    const queue = [start];
-    while (queue.length) {
-      const l = queue.shift()!;
-      for (const { joint, other } of adj.get(l) ?? []) {
-        if (visited.has(other)) continue;
-        visited.add(other);
-        joint.parentLink = l;
-        joint.childLink = other;
-        parentJointOfLink.set(other, joint);
-        treeOrder.push(other);
-        queue.push(other);
+    let queue = [start];
+    for (;;) {
+      // tree接続+能動関節だけでBFS
+      while (queue.length) {
+        const l = queue.shift()!;
+        for (const { joint, other } of adj.get(l) ?? []) {
+          if (visited.has(other) || !isPrimary(joint)) continue;
+          visit(other, joint, l);
+          queue.push(other);
+        }
       }
+      // まだ届かないリンクがあれば、loop接続を1本だけ使って続行(フォールバック)
+      let bridged = false;
+      for (const j of joints) {
+        if (j.locked || isPrimary(j)) continue;
+        const aV = visited.has(j.linkA);
+        const bV = visited.has(j.linkB);
+        if (aV !== bV) {
+          const from = aV ? j.linkA : j.linkB;
+          const other = aV ? j.linkB : j.linkA;
+          visit(other, j, from);
+          queue = [other];
+          bridged = true;
+          break;
+        }
+      }
+      if (!bridged) break;
     }
   }
   let hasLoop = false;

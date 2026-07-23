@@ -3,7 +3,9 @@
 // 向きは「子パーツのローカル軸が目標方向を向く angle/side/flip を候補から探索」で決める
 // (座標を直接置かないので、カタログ寸法が変わってもテンプレートが壊れにくい)。
 import { Matrix4, Quaternion, Vector3 } from "three";
-import { computeAttachment, findHole } from "../core/holes";
+import { computePoses } from "../core/assembly";
+import { computeAttachment, findHole, holesOf } from "../core/holes";
+import { settleLoops } from "../core/linkage";
 import type { Connection, HoleRef, Material, RobotModel, Vec3 } from "../core/types";
 import { emptyModel, INPUT_OPTIONS } from "../core/types";
 import { getDef } from "./catalog";
@@ -59,6 +61,9 @@ class Tpl {
     return id;
   }
 
+  /** 直近のattachで作られた接続ID(脚モジュールのsettle対象を集めるのに使う) */
+  lastConnId = "";
+
   attach(parentId: string, parentHole: HoleRef, defId: string, childHole: HoleRef, opts: AttachOpts = {}): string {
     const parentInst = this.model.parts.find((p) => p.id === parentId)!;
     const ph = findHole(getDef(parentInst.defId), parentHole);
@@ -98,6 +103,7 @@ class Tpl {
 
     const id = `p${this.seq++}`;
     this.model.parts.push({ id, defId, material: opts.material ?? "plastic" });
+    this.lastConnId = `c${this.seq}`;
     const conn: Connection = {
       id: `c${this.seq++}`,
       kind: "tree",
@@ -126,6 +132,51 @@ class Tpl {
 
   posOf(id: string): Vector3 {
     return new Vector3().setFromMatrixPosition(this.poses.get(id)!);
+  }
+
+  /** パーツのworld行列でローカル点を変換 */
+  worldPoint(id: string, localMm: Vec3): Vector3 {
+    return new Vector3(...localMm).applyMatrix4(this.poses.get(id)!);
+  }
+
+  /** world座標(y,z)に一致する穴を探す(側板のように穴が1平面に並ぶパーツ用) */
+  holeAtYZ(partId: string, y: number, z: number): HoleRef {
+    const inst = this.model.parts.find((p) => p.id === partId)!;
+    const M = this.poses.get(partId)!;
+    for (const h of holesOf(getDef(inst.defId))) {
+      const w = h.posMm.clone().applyMatrix4(M);
+      if (Math.abs(w.y - y) < 0.6 && Math.abs(w.z - z) < 0.6) return h.ref;
+    }
+    throw new Error(`template: no hole at yz=(${y},${z}) on ${inst.defId}`);
+  }
+
+  /** 追いピン(ループ接続)。テンプレートではsettleで厳密に閉じるので位置チェックはしない */
+  pin(aPart: string, aHole: HoleRef, bPart: string, bHole: HoleRef): string {
+    const id = `c${this.seq++}`;
+    this.model.connections.push({
+      id,
+      kind: "loop",
+      parentPart: aPart,
+      parentHole: aHole,
+      childPart: bPart,
+      childHole: bHole,
+      pins: 1,
+      angleDeg: 0,
+      side: 1,
+    });
+    return id;
+  }
+
+  /** 指定の受動関節角を、指定ループが閉じるように微調整(組立時の仕上げ) */
+  settle(varConnIds: string[], loopConnIds: string[]): number {
+    const res = settleLoops(this.model, varConnIds, loopConnIds);
+    this.model.connections = this.model.connections.map((c) => {
+      const a = res.angles.get(c.id);
+      return a === undefined ? c : { ...c, angleDeg: Math.round(a * 100) / 100 };
+    });
+    // 姿勢キャッシュを取り直す
+    this.poses = computePoses(this.model).poses;
+    return res.maxErrMm;
   }
 }
 
@@ -354,6 +405,185 @@ function buildHexapod(): RobotModel {
   return t.done();
 }
 
+// ---------------------------------------------------------------------------
+// テオヤンセン機構 8足(モータ2つ・クランクピン4つ・各ピンに前後鏡像の2脚)
+// リンク長はホーリーナンバーを5mmグリッドで再設計したもの。
+// 全回転ジャムなし・特異マージン7.7mm(原寸の6倍=ソルバが安定)・歩幅51mm・リフト13mm
+// を2D掃引の総当たり探索で確認済み:
+//   a40 l15 m15 b50 c40 d35 e55 f40 g40 h70 i50 j55 k60
+// ---------------------------------------------------------------------------
+const JN = { a: 40, l: 15, m: 15, b: 50, c: 40, d: 35, e: 55, f: 40, g: 40, h: 70, i: 50, j: 55, k: 60 };
+
+type P2 = [number, number];
+
+/** 円と円の交点(テンプレートのリンク長は掃引検証済みなので、交点なしは組立バグ) */
+function ci(c1: P2, r1: number, c2: P2, r2: number, pick: (p1: P2, p2: P2) => P2): P2 {
+  const dx = c2[0] - c1[0];
+  const dy = c2[1] - c1[1];
+  const d = Math.hypot(dx, dy);
+  const A = (r1 * r1 - r2 * r2 + d * d) / (2 * d);
+  const h2 = r1 * r1 - A * A;
+  if (h2 < 0 || d === 0) throw new Error(`jansen: no circle intersection (d=${d.toFixed(1)})`);
+  const h = Math.sqrt(h2);
+  const mx = c1[0] + (A * dx) / d;
+  const my = c1[1] + (A * dy) / d;
+  return pick([mx + (h * dy) / d, my - (h * dx) / d], [mx - (h * dy) / d, my + (h * dx) / d]);
+}
+
+/**
+ * ヤンセン脚の節点座標(u=進行方向, v=上。クランク軸原点、Qu=クランクピン位置)。
+ * 鏡像脚は呼び出し側で u→-u に反転する。
+ */
+function jansenNodes(Qu: P2): { P: P2; Q: P2; B1: P2; B2: P2; C1: P2; C2: P2; F: P2 } {
+  const P: P2 = [-JN.a, -JN.l];
+  const up = (p1: P2, p2: P2) => (p1[1] > p2[1] ? p1 : p2);
+  const down = (p1: P2, p2: P2) => (p1[1] < p2[1] ? p1 : p2);
+  const B1 = ci(P, JN.b, Qu, JN.j, up);
+  const leftOfPB1 = (p1: P2, p2: P2) => {
+    const s = (p: P2) => (B1[0] - P[0]) * (p[1] - P[1]) - (B1[1] - P[1]) * (p[0] - P[0]);
+    return s(p1) > s(p2) ? p1 : p2;
+  };
+  const B2 = ci(P, JN.d, B1, JN.e, leftOfPB1);
+  const C1 = ci(P, JN.c, Qu, JN.k, down);
+  const C2 = ci(B2, JN.f, C1, JN.g, down);
+  const leftOfC1C2 = (p1: P2, p2: P2) => {
+    const s = (p: P2) => (C2[0] - C1[0]) * (p[1] - C1[1]) - (C2[1] - C1[1]) * (p[0] - C1[0]);
+    return s(p1) > s(p2) ? p1 : p2;
+  };
+  const F = ci(C2, JN.h, C1, JN.i, leftOfC1C2);
+  return { P, Q: Qu, B1, B2, C1, C2, F };
+}
+
+const FINE_ANGLES = Array.from({ length: 180 }, (_, i) => i * 2); // 2°刻み(settleで仕上げる)
+
+/**
+ * ヤンセン脚1本を組む。sidePlate上のP穴とクランクピンQから10本のほねを張り、
+ * 5箇所の追いピンでループを閉じ、settleで厳密に整える。
+ */
+function buildJansenLeg(
+  t: Tpl,
+  sidePlate: string,
+  crank: string,
+  crankHole: HoleRef,
+  axle: { y: number; z: number },
+  Qworld: { y: number; z: number },
+  my: 1 | -1, // +1=前向き脚 / -1=後向き(鏡像)脚
+  sx: 1 | -1 // 体の左右(ほねの重ね方向にだけ使う)
+): void {
+  const Qu: P2 = [my * (Qworld.y - axle.y), Qworld.z - axle.z];
+  const n = jansenNodes(Qu);
+  // u空間 → world(y,z)
+  const W = (p: P2) => ({ y: axle.y + my * p[0], z: axle.z + p[1] });
+  const dir = (from: P2, to: P2): Vec3 => {
+    const a = W(from);
+    const b = W(to);
+    const len = Math.hypot(b.y - a.y, b.z - a.z);
+    return [0, (b.y - a.y) / len, (b.z - a.z) / len];
+  };
+  const Phole = t.holeAtYZ(sidePlate, W(n.P).y, W(n.P).z);
+
+  const vars: string[] = [];
+  const bar = (
+    parent: string,
+    pHole: HoleRef,
+    defId: string,
+    from: P2,
+    to: P2,
+    side: 1 | -1
+  ): string => {
+    const id = t.attach(parent, pHole, defId, g(0, 0), {
+      pins: 1,
+      side,
+      orient: [{ axisLocal: [1, 0, 0], targetWorld: dir(from, to) }],
+      angles: FINE_ANGLES,
+    });
+    vars.push(t.lastConnId);
+    return id;
+  };
+
+  const bJ = bar(crank, crankHole, "FR-B060", n.Q, n.B1, -sx as 1 | -1); // j=55
+  const bB = bar(sidePlate, Phole, "FR-B060", n.P, n.B1, sx); // b=50
+  const bE = bar(bB, g(0, 10), "FR-B060", n.B1, n.B2, sx); // e=55
+  const bD = bar(bE, g(0, 11), "FR-B045", n.B2, n.P, -sx as 1 | -1); // d=35
+  const bC = bar(sidePlate, Phole, "FR-B045", n.P, n.C1, sx); // c=40
+  const bK = bar(crank, crankHole, "FR-B075", n.Q, n.C1, -sx as 1 | -1); // k=60
+  const bG = bar(bC, g(0, 8), "FR-B045", n.C1, n.C2, sx); // g=40
+  const bH = bar(bG, g(0, 8), "FR-B075", n.C2, n.F, sx); // h=70
+  const bI = bar(bH, g(0, 14), "FR-B060", n.F, n.C1, -sx as 1 | -1); // i=50
+  const bF = bar(bD, g(0, 0), "FR-B045", n.B2, n.C2, sx); // f=40
+
+  const loops = [
+    t.pin(sidePlate, Phole, bD, g(0, 7)), // 三角B(b,e,d)をPで閉じる
+    t.pin(bE, g(0, 0), bJ, g(0, 11)), // B1: jの先端
+    t.pin(bC, g(0, 8), bK, g(0, 12)), // C1: kの先端
+    t.pin(bC, g(0, 8), bI, g(0, 10)), // C1: 足三角(g,h,i)を閉じる
+    t.pin(bG, g(0, 8), bF, g(0, 8)), // C2: fの先端
+  ];
+  const err = t.settle(vars, loops);
+  if (err > 0.5) throw new Error(`jansen leg settle failed: ${err.toFixed(2)}mm`);
+}
+
+function buildStrandbeest(): RobotModel {
+  const t = new Tpl("ヤンセンの8ほんあし");
+  const body = t.free("FR-P0612", [0, 0, 1.5]);
+  const THETA0 = (90 * Math.PI) / 180; // restのクランク角(全4位相の特異マージンが最大の角)
+
+  const servos: string[] = [];
+  for (const sx of [1, -1] as const) {
+    // 体のふちの金具 → たての側板(60×120を縦に)
+    const bracket = t.attach(body, gi("FR-P0612", 0, sx === 1 ? 11 : 0, 11), "JT-BRmic", g(0, 0), {
+      orient: [{ axisLocal: [1, 0, 0], targetWorld: [sx, 0, 0] }],
+    });
+    const sidePlate = t.attach(bracket, g(1, 0), "FR-P0612", gi("FR-P0612", 0, 0, 11), {
+      orient: [
+        { axisLocal: [0, 0, 1], targetWorld: [sx, 0, 0], weight: 2 }, // 板面は横向き
+        { axisLocal: [1, 0, 0], targetWorld: [0, 0, -1] }, // 下へぶら下げる
+      ],
+      trySide: true,
+    });
+    // 車輪用サーボ:側板のうち側に底面マウント(軸は外向き=機構面に垂直)。
+    // 左右で取付穴を鏡像に選び、軸の高さをそろえる
+    const servo = t.attach(sidePlate, gi("FR-P0612", 0, 2, 11), "SV-WHEEL", sx === 1 ? g(0, 0) : g(0, 1), {
+      orient: [
+        { axisLocal: [0, 0, 1], targetWorld: [sx, 0, 0], weight: 2 },
+        { axisLocal: [1, 0, 0], targetWorld: [0, 1, 0] },
+      ],
+      trySide: true,
+    });
+    servos.push(servo);
+    const drive = t.worldPoint(servo, [0, 0, 13]);
+    const axle = { y: drive.y, z: drive.z };
+
+    // ダブルクランク:駆動穴にほね(中長)のまんなかを固定 → 両端±15mmがクランクピン
+    const crank = t.attach(servo, { special: "drive" }, "FR-B075", g(0, 7), {
+      pins: 2,
+      orient: [{ axisLocal: [1, 0, 0], targetWorld: [0, Math.cos(THETA0), Math.sin(THETA0)] }],
+      angles: FINE_ANGLES,
+    });
+    const Q1 = t.worldPoint(crank, [15, 0, 0]);
+    const Q2 = t.worldPoint(crank, [-15, 0, 0]);
+
+    // クランクピン2つ × 前後鏡像 = 4脚/側
+    const pins: { Q: Vector3; hole: HoleRef }[] = [
+      { Q: Q1, hole: g(0, 10) }, // ローカル+15mm
+      { Q: Q2, hole: g(0, 4) }, // ローカル-15mm
+    ];
+    for (const { Q, hole } of pins) {
+      for (const my of [1, -1] as const) {
+        buildJansenLeg(t, sidePlate, crank, hole, axle, { y: Q.y, z: Q.z }, my, sx);
+      }
+    }
+  }
+
+  // パワーボックスS(コスト2)としょっかく
+  t.attach(body, gi("FR-P0612", 0, 5, 11), "PB-S", g(0, 2), {});
+  t.attach(body, gi("FR-P0612", 0, 3, 22), "DC-ANT", g(0, 0), { pins: 1 });
+  t.attach(body, gi("FR-P0612", 0, 8, 22), "DC-ANT", g(0, 0), { pins: 1 });
+  t.map(servos[0], "rightStickY");
+  t.map(servos[1], "leftStickY");
+  return t.done();
+}
+
 export interface TemplateInfo {
   id: string;
   emoji: string;
@@ -390,6 +620,13 @@ export const TEMPLATES: TemplateInfo[] = [
     name: "むしがた6そく",
     desc: "1サーボ×6脚+ボールの足先。安定感ばつぐん",
     build: buildHexapod,
+  },
+  {
+    id: "strandbeest",
+    emoji: "🦕",
+    name: "ヤンセンの8ほんあし",
+    desc: "テオヤンセン機構×4(前後鏡像ペア)をモータ2つで回す8足。からくりの最高峰!",
+    build: buildStrandbeest,
   },
 ];
 
