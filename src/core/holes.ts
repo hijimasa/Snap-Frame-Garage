@@ -117,6 +117,34 @@ export function defaultAttachHole(def: PartDef): HoleInfo | undefined {
 }
 
 /**
+ * 配置前に選べる取付面。同じ向きの穴グループは1面としてまとめる。
+ * サーボなら「底面」と「背面」、L字金具なら各直交面が返る。
+ */
+export function mountingFacesOf(def: PartDef): HoleInfo[] {
+  const seen = new Set<string>();
+  return holesOf(def).filter((hole) => {
+    if (hole.kind !== "plain" || hole.body !== "main") return false;
+    const key = [hole.normal.x, hole.normal.y, hole.normal.z]
+      .map((n) => Math.round(n * 1000))
+      .join(":");
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+/** 選んだ取付面を床へ向け、Z軸まわりに向きを調整した自由配置姿勢。 */
+export function floorPlacementQuaternion(childHole: HoleInfo, angleDeg: number): Quaternion {
+  const down = new Vector3(0, 0, -1);
+  const align = new Quaternion().setFromUnitVectors(childHole.normal.clone().normalize(), down);
+  const twist = new Quaternion().setFromAxisAngle(
+    new Vector3(0, 0, 1),
+    (angleDeg * Math.PI) / 180
+  );
+  return twist.multiply(align).normalize();
+}
+
+/**
  * 取付変換の計算(スナップの数学的中核)。
  * 親パーツ姿勢 Pp、親穴(ローカル)、子穴(ローカル)、回転角θ、面side s から
  * 子パーツの姿勢(world)を求める:

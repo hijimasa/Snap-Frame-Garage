@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { PerspectiveCamera, Vector3 } from "three";
+import { PerspectiveCamera, Quaternion, Vector3 } from "three";
 
 test.describe("空キャンバスの開始案内", () => {
   test.beforeEach(async ({ page }) => {
@@ -19,6 +19,12 @@ test.describe("空キャンバスの開始案内", () => {
     await expect(start).toBeHidden();
     await expect(page.locator(".statusbar").getByText("9 g", { exact: true })).toBeVisible();
     await expect(page.getByText("下のボタンで向きや高さを調整しよう")).toBeVisible();
+    await expect(page.getByRole("button", { name: "ほかのパーツとつなぐ" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "↺ 90°" }).first()).toBeHidden();
+
+    await page.getByText("向きと位置を調整", { exact: true }).click();
+    await expect(page.getByRole("button", { name: "↺ 90°" }).first()).toBeVisible();
+    await expect(page.locator(".danger-fold .danger")).toBeHidden();
 
     await page.getByTitle("もとに戻す (Ctrl+Z)").click();
     await expect(start).toBeVisible();
@@ -31,6 +37,31 @@ test.describe("空キャンバスの開始案内", () => {
 
     await expect(page.getByText("「マイクロサーボ」を置く場所を決めよう")).toBeVisible();
     await expect(page.getByText("光っている穴なら接続、床なら仮置き")).toBeVisible();
+  });
+
+  test("サーボの取付面と向きを配置前に変更できる", async ({ page }) => {
+    await page.locator(".part-card").filter({ hasText: "車輪用サーボ" }).click();
+    await expect(page.getByRole("button", { name: /取付面: 底面/ })).toBeVisible();
+
+    await page.getByRole("button", { name: /取付面: 底面/ }).click();
+    await expect(page.getByRole("button", { name: /取付面: うしろ面/ })).toBeVisible();
+    await page.getByRole("button", { name: "配置する向きを右へ90度" }).click();
+    await expect(page.getByText("向き 90°")).toBeVisible();
+
+    const canvas = page.locator("canvas");
+    const box = await canvas.boundingBox();
+    expect(box).not.toBeNull();
+    if (!box) return;
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height * 0.7);
+    await expect(page.locator(".statusbar").getByText("9 g", { exact: true })).toBeVisible();
+
+    const quat = await page.evaluate(() => {
+      const saved = JSON.parse(localStorage.getItem("sfg-autosave")!);
+      return saved.model.parts[0].basePose.quatWxyz as [number, number, number, number];
+    });
+    const q = new Quaternion(quat[1], quat[2], quat[3], quat[0]);
+    const driveAxis = new Vector3(0, 0, 1).applyQuaternion(q);
+    expect(Math.abs(driveAxis.z)).toBeLessThan(1e-6);
   });
 
   test("カタログをおすすめ・検索・全パーツで切り替えられる", async ({ page }) => {

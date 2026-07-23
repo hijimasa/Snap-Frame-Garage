@@ -312,6 +312,73 @@ body,
   font-size: 12px;
   line-height: 1.55;
 }
+.inspector .section.pending-placement {
+  margin: 0 10px 8px;
+  padding: 10px 12px;
+  background: #242f38;
+  border: 1px solid #355668;
+  border-radius: 10px;
+}
+.pending-placement .sub-title {
+  margin-top: 0;
+  color: #7ce38b;
+}
+.mount-face-button {
+  width: 100%;
+  margin-bottom: 8px;
+}
+.pending-rotation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #cdd3e0;
+  font-size: 12px;
+}
+.primary-action {
+  width: 100%;
+  padding-block: 7px;
+  background: #1f4d5c;
+  border-color: #35c5e4;
+}
+.control-fold,
+.inspector-fold {
+  margin-top: 8px;
+}
+.control-fold > summary,
+.inspector-fold > summary {
+  padding: 6px 0;
+  color: #aab2c4;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.control-fold > summary:hover,
+.inspector-fold > summary:hover {
+  color: #fff;
+}
+.control-fold[open] > summary,
+.inspector-fold[open] > summary {
+  color: #35c5e4;
+}
+.control-fold-body,
+.inspector-fold-body {
+  padding: 5px 0 3px;
+}
+.control-fold-body > .mini {
+  margin-top: 7px;
+}
+.danger-fold > summary {
+  color: #8a93a8;
+}
+.inspector-fold {
+  margin-top: 0;
+}
+.inspector-fold > summary {
+  padding: 2px 0;
+  color: #e8eaf0;
+  font-size: 13px;
+}
 .section-title {
   font-weight: bold;
   margin-bottom: 8px;

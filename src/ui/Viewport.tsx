@@ -15,7 +15,14 @@ import {
   Vector3,
 } from "three";
 import { buildAssembly, bodyDisplayMatrix, linkDeltas, type Assembly } from "../core/assembly";
-import { computeAttachment, defaultAttachHole, holesOf, type HoleInfo } from "../core/holes";
+import {
+  computeAttachment,
+  defaultAttachHole,
+  floorPlacementQuaternion,
+  holesOf,
+  mountingFacesOf,
+  type HoleInfo,
+} from "../core/holes";
 import { solveDisplayAngles } from "../core/linkage";
 import { robotMassSummary } from "../core/mass";
 import {
@@ -25,7 +32,7 @@ import {
   type DragSnapData,
   type SnapResult,
 } from "../core/snap";
-import { computeStability, defLocalMinZ } from "../core/stability";
+import { computeStability, defBBoxCorners } from "../core/stability";
 import type { Geom, PartInstance } from "../core/types";
 import { getDef } from "../data/catalog";
 import { useStore } from "../state/store";
@@ -245,6 +252,8 @@ export function Viewport() {
   const selection = useStore((s) => s.selection);
   const setSelection = useStore((s) => s.setSelection);
   const pendingDefId = useStore((s) => s.pendingDefId);
+  const pendingMountFace = useStore((s) => s.pendingMountFace);
+  const pendingAngleDeg = useStore((s) => s.pendingAngleDeg);
   const attachPart = useStore((s) => s.attachPart);
   const placeFreePart = useStore((s) => s.placeFreePart);
   const setFreePartPos = useStore((s) => s.setFreePartPos);
@@ -410,17 +419,29 @@ export function Viewport() {
   const ghostMatrix = useMemo(() => {
     if (!pendingDefId || !hover) return null;
     const def = getDef(pendingDefId);
+    const faces = mountingFacesOf(def);
+    const child =
+      faces[pendingMountFace % Math.max(1, faces.length)] ?? defaultAttachHole(def);
+    if (!child) return null;
     if (hover.kind === "floor") {
-      return new Matrix4().makeTranslation(
-        snap5(hover.x),
-        snap5(hover.y),
-        floorZModel - defLocalMinZ(def)
+      const q = floorPlacementQuaternion(child, pendingAngleDeg);
+      const minZ = Math.min(
+        ...defBBoxCorners(def).map((corner) => corner.clone().applyQuaternion(q).z)
+      );
+      return new Matrix4().compose(
+        new Vector3(snap5(hover.x), snap5(hover.y), floorZModel - minZ),
+        q,
+        new Vector3(1, 1, 1)
       );
     }
-    const child = defaultAttachHole(def);
-    if (!child) return null;
-    return computeAttachment(hover.h.worldM, hover.h.hole, child, 0, hover.h.side);
-  }, [pendingDefId, hover, floorZModel]);
+    return computeAttachment(
+      hover.h.worldM,
+      hover.h.hole,
+      child,
+      pendingAngleDeg,
+      hover.h.side
+    );
+  }, [pendingDefId, pendingMountFace, pendingAngleDeg, hover, floorZModel]);
 
   // 支持多角形の形状
   const polyPoints = stability.supportPolygonXY;

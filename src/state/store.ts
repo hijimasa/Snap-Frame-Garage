@@ -3,11 +3,18 @@
 import { Quaternion, Vector3 } from "three";
 import { create } from "zustand";
 import { getDef } from "../data/catalog";
-import { defaultAttachHole, holesOf, holeKey, findHole } from "../core/holes";
+import {
+  defaultAttachHole,
+  findHole,
+  floorPlacementQuaternion,
+  holesOf,
+  holeKey,
+  mountingFacesOf,
+} from "../core/holes";
 import { islandRootOf, subtreeParts } from "../core/assembly";
 import * as edit from "../core/edit";
 import { solveRestLinkage } from "../core/linkage";
-import { defBBoxCorners, defLocalMinZ } from "../core/stability";
+import { defBBoxCorners } from "../core/stability";
 import type { Connection, HoleRef, Material, RobotModel } from "../core/types";
 import { emptyModel } from "../core/types";
 import { deserializeProject, serializeProject } from "../core/export/robopkg";
@@ -30,6 +37,8 @@ interface Store {
   future: RobotModel[];
   selection: string | null;
   pendingDefId: string | null; // 取付待ちのカタログパーツ
+  pendingMountFace: number; // 配置前に選んだ取付面
+  pendingAngleDeg: number; // 配置前の取付面まわりの向き
   linkFirstHole: { partId: string; holeKey: string; side: 1 | -1 } | null; // ピン留めの1点目
   linkMode: boolean;
   poseAngles: Record<string, number>;
@@ -45,6 +54,8 @@ interface Store {
   redo: () => void;
   setSelection: (id: string | null) => void;
   setPendingDef: (id: string | null) => void;
+  cyclePendingMountFace: () => void;
+  rotatePending: (deltaDeg: number) => void;
   setLinkMode: (on: boolean) => void;
   setLinkFirstHole: (h: { partId: string; holeKey: string; side: 1 | -1 } | null) => void;
   placeFreePart: (defId: string, xMm: number, yMm: number, floorZMm: number) => void;
@@ -110,6 +121,8 @@ export const useStore = create<Store>((set, get) => ({
   future: [],
   selection: null,
   pendingDefId: null,
+  pendingMountFace: 0,
+  pendingAngleDeg: 0,
   linkFirstHole: null,
   linkMode: false,
   poseAngles: {},
@@ -142,14 +155,39 @@ export const useStore = create<Store>((set, get) => ({
   },
   setSelection: (id) => set({ selection: id, pendingDefId: null }),
   setPendingDef: (id) =>
-    set({ pendingDefId: id, selection: null, linkMode: false, linkFirstHole: null }),
+    set({
+      pendingDefId: id,
+      pendingMountFace: 0,
+      pendingAngleDeg: 0,
+      selection: null,
+      linkMode: false,
+      linkFirstHole: null,
+    }),
+  cyclePendingMountFace() {
+    const { pendingDefId, pendingMountFace } = get();
+    if (!pendingDefId) return;
+    const count = mountingFacesOf(getDef(pendingDefId)).length;
+    if (count > 1) set({ pendingMountFace: (pendingMountFace + 1) % count });
+  },
+  rotatePending: (deltaDeg) =>
+    set((s) => ({
+      pendingAngleDeg: ((s.pendingAngleDeg + deltaDeg) % 360 + 360) % 360,
+    })),
   setLinkMode: (on) =>
     set({ linkMode: on, linkFirstHole: null, pendingDefId: null, selection: null }),
   setLinkFirstHole: (h) => set({ linkFirstHole: h }),
 
   placeFreePart(defId, xMm, yMm, floorZMm) {
-    const { model, commit } = get();
+    const { model, commit, pendingMountFace, pendingAngleDeg } = get();
     const def = getDef(defId);
+    const faces = mountingFacesOf(def);
+    const child = faces[pendingMountFace % Math.max(1, faces.length)] ?? defaultAttachHole(def);
+    const q = child
+      ? floorPlacementQuaternion(child, pendingAngleDeg)
+      : new Quaternion();
+    const minZ = Math.min(
+      ...defBBoxCorners(def).map((corner) => corner.clone().applyQuaternion(q).z)
+    );
     const id = `p${model.nextSeq}`;
     const snap = (v: number) => Math.round(v / 5) * 5;
     const mappings = [...model.mappings];
@@ -167,8 +205,8 @@ export const useStore = create<Store>((set, get) => ({
           defId,
           material: "plastic",
           basePose: {
-            posMm: [snap(xMm), snap(yMm), floorZMm - defLocalMinZ(def)],
-            quatWxyz: [1, 0, 0, 0],
+            posMm: [snap(xMm), snap(yMm), floorZMm - minZ],
+            quatWxyz: [q.w, q.x, q.y, q.z],
           },
         },
       ],
@@ -179,11 +217,19 @@ export const useStore = create<Store>((set, get) => ({
   },
 
   attachPart(parentPartId, parentHoleKey, side) {
-    const { model, pendingDefId, commit, showToast } = get();
+    const {
+      model,
+      pendingDefId,
+      pendingMountFace,
+      pendingAngleDeg,
+      commit,
+      showToast,
+    } = get();
     if (!pendingDefId) return;
     const def = getDef(pendingDefId);
     // 取付に使う子側の穴:通常穴(main)の先頭(ゴーストプレビューと同じ規則)
-    const child = defaultAttachHole(def);
+    const faces = mountingFacesOf(def);
+    const child = faces[pendingMountFace % Math.max(1, faces.length)] ?? defaultAttachHole(def);
     if (!child) {
       showToast("このパーツには取付穴がないみたい");
       return;
@@ -203,7 +249,7 @@ export const useStore = create<Store>((set, get) => ({
       childPart: id,
       childHole: child.ref,
       pins: 2, // デフォルトは固定(別紙2§7.2:回るは明示的な切替)
-      angleDeg: 0,
+      angleDeg: pendingAngleDeg,
       side,
     };
     const mappings = [...model.mappings];

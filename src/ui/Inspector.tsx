@@ -2,6 +2,7 @@
 import { useMemo } from "react";
 import { buildAssembly } from "../core/assembly";
 import { holeKey } from "../core/holes";
+import { mountingFacesOf } from "../core/holes";
 import { partMassProps } from "../core/mass";
 import { exportGate } from "../core/power";
 import { getDef } from "../data/catalog";
@@ -88,60 +89,48 @@ function SelectedPartSection() {
           <div className="hint">
             選んだままドラッグで移動。📌ピンでとめると他のパーツとつながるよ
           </div>
-          <div className="kv">
-            <span>くるっと(水平)</span>
-            <span className="btn-row">
-              <button className="mini" onClick={() => rotateFreePart(inst.id, "z", 90)}>↺ 90°</button>
-              <button className="mini" onClick={() => rotateFreePart(inst.id, "z", -90)}>↻ 90°</button>
-            </span>
-          </div>
-          <div className="kv">
-            <span>ぱたんと(前後)</span>
-            <span className="btn-row">
-              <button className="mini" onClick={() => rotateFreePart(inst.id, "x", 90)}>↺ 90°</button>
-              <button className="mini" onClick={() => rotateFreePart(inst.id, "x", -90)}>↻ 90°</button>
-            </span>
-          </div>
-          <div className="kv">
-            <span>ぱたんと(左右)</span>
-            <span className="btn-row">
-              <button className="mini" onClick={() => rotateFreePart(inst.id, "y", 90)}>↺ 90°</button>
-              <button className="mini" onClick={() => rotateFreePart(inst.id, "y", -90)}>↻ 90°</button>
-            </span>
-          </div>
-          <div className="btn-row wrap">
-            <button className="mini" onClick={() => liftFreePart(inst.id, 5)}>
-              ⬆ 5mm上げる
-            </button>
-            <button className="mini" onClick={() => liftFreePart(inst.id, -5)}>
-              ⬇ 5mm下げる
-            </button>
-            <button className="mini" onClick={() => setLinkMode(true)}>
-              📌 ピンでとめる
-            </button>
-          </div>
+          <button className="mini primary-action" onClick={() => setLinkMode(true)}>
+            📌 ほかのパーツとつなぐ
+          </button>
+          <details className="control-fold">
+            <summary>向きと位置を調整</summary>
+            <div className="control-fold-body">
+              <div className="kv">
+                <span>くるっと(水平)</span>
+                <span className="btn-row">
+                  <button className="mini" onClick={() => rotateFreePart(inst.id, "z", 90)}>↺ 90°</button>
+                  <button className="mini" onClick={() => rotateFreePart(inst.id, "z", -90)}>↻ 90°</button>
+                </span>
+              </div>
+              <div className="kv">
+                <span>ぱたんと(前後)</span>
+                <span className="btn-row">
+                  <button className="mini" onClick={() => rotateFreePart(inst.id, "x", 90)}>↺ 90°</button>
+                  <button className="mini" onClick={() => rotateFreePart(inst.id, "x", -90)}>↻ 90°</button>
+                </span>
+              </div>
+              <div className="kv">
+                <span>ぱたんと(左右)</span>
+                <span className="btn-row">
+                  <button className="mini" onClick={() => rotateFreePart(inst.id, "y", 90)}>↺ 90°</button>
+                  <button className="mini" onClick={() => rotateFreePart(inst.id, "y", -90)}>↻ 90°</button>
+                </span>
+              </div>
+              <div className="btn-row wrap">
+                <button className="mini" onClick={() => liftFreePart(inst.id, 5)}>
+                  ⬆ 5mm上げる
+                </button>
+                <button className="mini" onClick={() => liftFreePart(inst.id, -5)}>
+                  ⬇ 5mm下げる
+                </button>
+              </div>
+            </div>
+          </details>
         </>
       )}
       {treeConn && (
         <>
           <div className="sub-title">とりつけ</div>
-          <div className="btn-row wrap">
-            <button className="mini" onClick={() => rotateChild(inst.id, 90)}>
-              {L.rotate} ↺
-            </button>
-            <button className="mini" onClick={() => rotateChild(inst.id, -90)}>
-              {L.rotate} ↻
-            </button>
-            <button className="mini" onClick={() => flipChild(inst.id)}>
-              {L.flip}
-            </button>
-            <button className="mini" onClick={() => flipChildOver(inst.id)}>
-              {L.flipOver}
-            </button>
-            <button className="mini" onClick={() => cycleChildHole(inst.id)}>
-              {L.cycleHole}
-            </button>
-          </div>
           {!treeSpecial && (
             <div className="kv">
               <span>とめかた</span>
@@ -169,11 +158,35 @@ function SelectedPartSection() {
               💡 ピン1本のパーツは、3Dビューで直接つかんでくるくる回せるよ
             </div>
           )}
-          <div className="btn-row" style={{ marginTop: 6 }}>
-            <button className="mini" onClick={() => detachPart(inst.id)} title="削除せずに親から切り離して、自由に動かせるようにする">
-              🔓 はずして自由にする
-            </button>
-          </div>
+          <details className="control-fold">
+            <summary>取り付けを調整</summary>
+            <div className="control-fold-body">
+              <div className="btn-row wrap">
+                <button className="mini" onClick={() => rotateChild(inst.id, 90)}>
+                  {L.rotate} ↺
+                </button>
+                <button className="mini" onClick={() => rotateChild(inst.id, -90)}>
+                  {L.rotate} ↻
+                </button>
+                <button className="mini" onClick={() => flipChild(inst.id)}>
+                  {L.flip}
+                </button>
+                <button className="mini" onClick={() => flipChildOver(inst.id)}>
+                  {L.flipOver}
+                </button>
+                <button className="mini" onClick={() => cycleChildHole(inst.id)}>
+                  {L.cycleHole}
+                </button>
+              </div>
+              <button
+                className="mini"
+                onClick={() => detachPart(inst.id)}
+                title="削除せずに親から切り離して、自由に動かせるようにする"
+              >
+                🔓 はずして自由にする
+              </button>
+            </div>
+          </details>
         </>
       )}
       {loopConns.length > 0 && (
@@ -199,22 +212,25 @@ function SelectedPartSection() {
           ))}
         </>
       )}
-      <div className="btn-row" style={{ marginTop: 10 }}>
-        <button
-          className="mini danger"
-          onClick={() => {
-            const hasChildren = model.connections.some(
-              (c) => c.kind === "tree" && c.parentPart === inst.id
-            );
-            if (hasChildren) {
-              if (!confirm("くっついている子パーツもいっしょに消えるよ。いい?(残したい子は先に「はずして自由にする」)")) return;
-            }
-            deletePart(inst.id);
-          }}
-        >
-          🗑 {L.del}
-        </button>
-      </div>
+      <details className="control-fold danger-fold">
+        <summary>その他の操作</summary>
+        <div className="control-fold-body">
+          <button
+            className="mini danger"
+            onClick={() => {
+              const hasChildren = model.connections.some(
+                (c) => c.kind === "tree" && c.parentPart === inst.id
+              );
+              if (hasChildren) {
+                if (!confirm("くっついている子パーツもいっしょに消えるよ。いい?(残したい子は先に「はずして自由にする」)")) return;
+              }
+              deletePart(inst.id);
+            }}
+          >
+            🗑 {L.del}
+          </button>
+        </div>
+      </details>
     </div>
   );
 }
@@ -230,13 +246,15 @@ function PoseSection() {
   const servos = model.parts.filter((p) => getDef(p.defId).servo);
   if (servos.length === 0) return null;
   return (
-    <div className="section">
-      <div className="section-title">
-        {L.pose}
+    <details className="section inspector-fold">
+      <summary>{L.pose}</summary>
+      <div className="inspector-fold-body">
+        <div className="section-title">
+          サーボを動かして確認
         <button className="mini" onClick={resetPose}>
           もとに戻す
         </button>
-      </div>
+        </div>
       {servos.map((p) => {
         const def = getDef(p.defId);
         const range = def.servo!.continuous ? 180 : def.servo!.rangeDeg;
@@ -260,7 +278,8 @@ function PoseSection() {
       <div className="hint">
         うごかして転びそうかは、シミュレータでたしかめてね(わざと転ぶのも面白い)
       </div>
-    </div>
+      </div>
+    </details>
   );
 }
 
@@ -272,8 +291,9 @@ function MappingSection() {
   const servos = model.parts.filter((p) => getDef(p.defId).servo);
   if (servos.length === 0) return null;
   return (
-    <div className="section">
-      <div className="section-title">{L.mapping}</div>
+    <details className="section inspector-fold">
+      <summary>{L.mapping}</summary>
+      <div className="inspector-fold-body">
       {servos.map((p) => {
         const def = getDef(p.defId);
         const m = model.mappings.find((mm) => mm.jointId === p.id);
@@ -295,7 +315,8 @@ function MappingSection() {
           </div>
         );
       })}
-    </div>
+      </div>
+    </details>
   );
 }
 
@@ -379,11 +400,55 @@ function NextActionSection() {
   );
 }
 
+function mountFaceLabel(normal: { x: number; y: number; z: number }, index: number): string {
+  if (normal.z < -0.8) return "底面";
+  if (normal.z > 0.8) return "上面";
+  if (normal.y < -0.8) return "うしろ面";
+  if (normal.y > 0.8) return "まえ面";
+  return `よこ面${index + 1}`;
+}
+
+function PendingPlacementSection() {
+  const pendingDefId = useStore((s) => s.pendingDefId);
+  const pendingMountFace = useStore((s) => s.pendingMountFace);
+  const pendingAngleDeg = useStore((s) => s.pendingAngleDeg);
+  const cyclePendingMountFace = useStore((s) => s.cyclePendingMountFace);
+  const rotatePending = useStore((s) => s.rotatePending);
+  if (!pendingDefId) return null;
+
+  const faces = mountingFacesOf(getDef(pendingDefId));
+  const face = faces[pendingMountFace % Math.max(1, faces.length)];
+
+  return (
+    <section className="section pending-placement" aria-label="配置する向き">
+      <div className="sub-title">置く前に向きを決める</div>
+      {faces.length > 1 && face && (
+        <button className="mini mount-face-button" onClick={cyclePendingMountFace}>
+          取付面: {mountFaceLabel(face.normal, pendingMountFace)} ↻
+        </button>
+      )}
+      <div className="pending-rotation">
+        <span>向き {pendingAngleDeg}°</span>
+        <span className="btn-row">
+          <button className="mini" onClick={() => rotatePending(-90)} aria-label="配置する向きを左へ90度">
+            ↺ 90°
+          </button>
+          <button className="mini" onClick={() => rotatePending(90)} aria-label="配置する向きを右へ90度">
+            ↻ 90°
+          </button>
+        </span>
+      </div>
+      <div className="hint">半透明のプレビューを見ながら変えられるよ</div>
+    </section>
+  );
+}
+
 export function Inspector() {
   return (
     <div className="inspector">
       <div className="panel-title">パーツのようす</div>
       <NextActionSection />
+      <PendingPlacementSection />
       <SelectedPartSection />
       <DanglingSection />
       <PoseSection />
