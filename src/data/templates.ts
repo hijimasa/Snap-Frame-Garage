@@ -4,7 +4,7 @@
 // (座標を直接置かないので、カタログ寸法が変わってもテンプレートが壊れにくい)。
 import { Matrix4, Quaternion, Vector3 } from "three";
 import { computePoses } from "../core/assembly";
-import { computeAttachment, findHole, holesOf } from "../core/holes";
+import { computeAttachment, findHole, holesOf, solveAttachParams } from "../core/holes";
 import { settleLoops } from "../core/linkage";
 import type { Connection, HoleRef, Material, RobotModel, Vec3 } from "../core/types";
 import { emptyModel, INPUT_OPTIONS } from "../core/types";
@@ -134,6 +134,41 @@ class Tpl {
   }
 
   done(): RobotModel {
+    // テンプレートの組立計算は部品グリッドに沿った従来座標で行い、完成した島を
+    // -90°回して old +Y(進行方向) → ROS +X、old +X(右) → ROS -Y に合わせる。
+    const rosYaw = new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), -Math.PI / 2);
+    const rosM = new Matrix4().makeRotationFromQuaternion(rosYaw);
+    const oldPoses = computePoses(this.model).poses;
+    const desiredPoses = new Map<string, Matrix4>();
+    for (const [id, pose] of oldPoses) desiredPoses.set(id, rosM.clone().multiply(pose));
+    const children = new Set(
+      this.model.connections.filter((c) => c.kind === "tree").map((c) => c.childPart)
+    );
+    for (const part of this.model.parts) {
+      if (children.has(part.id) || !part.basePose) continue;
+      const p = new Vector3(...part.basePose.posMm).applyQuaternion(rosYaw);
+      const [w, x, y, z] = part.basePose.quatWxyz;
+      const q = rosYaw.clone().multiply(new Quaternion(x, y, z, w)).normalize();
+      part.basePose = { posMm: [p.x, p.y, p.z], quatWxyz: [q.w, q.x, q.y, q.z] };
+    }
+    // angleDegはworld基準のため、ルート姿勢だけ変えると一部の子が同じ回転にならない。
+    // 各接続について回転後の目標姿勢を再現するside/flip/angleを親から順に逆算する。
+    for (const connection of this.model.connections) {
+      if (connection.kind !== "tree") continue;
+      const parentPose = desiredPoses.get(connection.parentPart);
+      const childPose = desiredPoses.get(connection.childPart);
+      const parent = this.model.parts.find((p) => p.id === connection.parentPart);
+      const child = this.model.parts.find((p) => p.id === connection.childPart);
+      if (!parentPose || !childPose || !parent || !child) continue;
+      const parentHole = findHole(getDef(parent.defId), connection.parentHole);
+      const childHole = findHole(getDef(child.defId), connection.childHole);
+      if (!parentHole || !childHole) continue;
+      const solved = solveAttachParams(parentPose, parentHole, childHole, childPose);
+      if (!solved) throw new Error(`template: ROS transform failed at ${connection.id}`);
+      connection.angleDeg = Math.round(solved.angleDeg * 100) / 100;
+      connection.side = solved.side;
+      connection.flip = solved.flip || undefined;
+    }
     this.model.nextSeq = this.seq;
     return this.model;
   }

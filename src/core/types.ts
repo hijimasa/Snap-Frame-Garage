@@ -1,7 +1,8 @@
 // Snap Frame Garage — コア型定義
 // 内部表現(独自ロボット記述モデル)を正とする(企画書§5.1)。
 // 単位:長さ mm / 質量 g / 角度 deg(エクスポート時に m・kg・rad へ変換)
-// 座標系:Z-up(床 = XY平面)。URDF/MJCFと同一で変換不要。
+// 座標系:ROS REP-103準拠(+X=正面、+Y=左、+Z=上、床=XY平面)。
+// URDF/MJCFと同一で変換不要。
 
 export type Vec3 = [number, number, number];
 

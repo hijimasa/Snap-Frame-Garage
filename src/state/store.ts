@@ -39,6 +39,8 @@ interface Store {
   pendingDefId: string | null; // 取付待ちのカタログパーツ
   pendingMountFace: number; // 配置前に選んだ取付面
   pendingAngleDeg: number; // 配置前の取付面まわりの向き
+  pendingTiltXDeg: number; // 床配置プレビューのworld X回転
+  pendingTiltYDeg: number; // 床配置プレビューのworld Y回転
   linkFirstHole: { partId: string; holeKey: string; side: 1 | -1 } | null; // ピン留めの1点目
   linkMode: boolean;
   poseAngles: Record<string, number>;
@@ -56,6 +58,8 @@ interface Store {
   setPendingDef: (id: string | null) => void;
   cyclePendingMountFace: () => void;
   rotatePending: (deltaDeg: number) => void;
+  tiltPending: (axis: "x" | "y", deltaDeg: number) => void;
+  resetPendingRotation: () => void;
   setLinkMode: (on: boolean) => void;
   setLinkFirstHole: (h: { partId: string; holeKey: string; side: 1 | -1 } | null) => void;
   placeFreePart: (defId: string, xMm: number, yMm: number, floorZMm: number) => void;
@@ -124,6 +128,8 @@ export const useStore = create<Store>((set, get) => ({
   pendingDefId: null,
   pendingMountFace: 0,
   pendingAngleDeg: 0,
+  pendingTiltXDeg: 0,
+  pendingTiltYDeg: 0,
   linkFirstHole: null,
   linkMode: false,
   poseAngles: {},
@@ -182,6 +188,8 @@ export const useStore = create<Store>((set, get) => ({
       pendingDefId: id,
       pendingMountFace: 0,
       pendingAngleDeg: 0,
+      pendingTiltXDeg: 0,
+      pendingTiltYDeg: 0,
       selection: null,
       linkMode: false,
       linkFirstHole: null,
@@ -196,17 +204,34 @@ export const useStore = create<Store>((set, get) => ({
     set((s) => ({
       pendingAngleDeg: ((s.pendingAngleDeg + deltaDeg) % 360 + 360) % 360,
     })),
+  tiltPending: (axis, deltaDeg) =>
+    set((s) =>
+      axis === "x"
+        ? { pendingTiltXDeg: ((s.pendingTiltXDeg + deltaDeg) % 360 + 360) % 360 }
+        : { pendingTiltYDeg: ((s.pendingTiltYDeg + deltaDeg) % 360 + 360) % 360 }
+    ),
+  resetPendingRotation: () =>
+    set({ pendingAngleDeg: 0, pendingTiltXDeg: 0, pendingTiltYDeg: 0 }),
   setLinkMode: (on) =>
     set({ linkMode: on, linkFirstHole: null, pendingDefId: null, selection: null }),
   setLinkFirstHole: (h) => set({ linkFirstHole: h }),
 
   placeFreePart(defId, xMm, yMm, floorZMm) {
-    const { model, commit, pendingMountFace, pendingAngleDeg, showToast } = get();
+    const {
+      model, commit, pendingMountFace, pendingAngleDeg,
+      pendingTiltXDeg, pendingTiltYDeg, showToast,
+    } = get();
     const def = getDef(defId);
     const faces = mountingFacesOf(def);
     const child = faces[pendingMountFace % Math.max(1, faces.length)] ?? defaultAttachHole(def);
     const q = child
-      ? floorPlacementQuaternion(child, pendingAngleDeg)
+      ? floorPlacementQuaternion(
+          child,
+          pendingAngleDeg,
+          pendingTiltXDeg,
+          pendingTiltYDeg,
+          def.contact === "caster"
+        )
       : new Quaternion();
     const minZ = Math.min(
       ...defBBoxCorners(def).map((corner) => corner.clone().applyQuaternion(q).z)

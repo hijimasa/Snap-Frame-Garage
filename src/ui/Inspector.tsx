@@ -425,8 +425,12 @@ function PendingPlacementSection() {
   const pendingDefId = useStore((s) => s.pendingDefId);
   const pendingMountFace = useStore((s) => s.pendingMountFace);
   const pendingAngleDeg = useStore((s) => s.pendingAngleDeg);
+  const pendingTiltXDeg = useStore((s) => s.pendingTiltXDeg);
+  const pendingTiltYDeg = useStore((s) => s.pendingTiltYDeg);
   const cyclePendingMountFace = useStore((s) => s.cyclePendingMountFace);
   const rotatePending = useStore((s) => s.rotatePending);
+  const tiltPending = useStore((s) => s.tiltPending);
+  const resetPendingRotation = useStore((s) => s.resetPendingRotation);
   if (!pendingDefId) return null;
 
   const faces = mountingFacesOf(getDef(pendingDefId));
@@ -440,18 +444,28 @@ function PendingPlacementSection() {
           取付面: {mountFaceLabel(face.normal, pendingMountFace)} ↻
         </button>
       )}
-      <div className="pending-rotation">
-        <span>向き {pendingAngleDeg}°</span>
-        <span className="btn-row">
-          <button className="mini" onClick={() => rotatePending(-90)} aria-label="配置する向きを左へ90度">
-            ↺ 90°
-          </button>
-          <button className="mini" onClick={() => rotatePending(90)} aria-label="配置する向きを右へ90度">
-            ↻ 90°
-          </button>
-        </span>
+      <div className="pending-axis-buttons" role="group" aria-label="配置する回転">
+        {([
+          ["X", pendingTiltXDeg, () => tiltPending("x", -90), () => tiltPending("x", 90)],
+          ["Y", pendingTiltYDeg, () => tiltPending("y", -90), () => tiltPending("y", 90)],
+          ["Z", pendingAngleDeg, () => rotatePending(-90), () => rotatePending(90)],
+        ] as const).map(([axis, angle, negative, positive]) => (
+          <div className="pending-axis-row" key={axis}>
+            <b className={`axis-label axis-${axis.toLowerCase()}`}>{axis}</b>
+            <span>{angle}°</span>
+            <button className="mini" onClick={negative} aria-label={`${axis}軸をマイナス90度回転`}>
+              −90°
+            </button>
+            <button className="mini" onClick={positive} aria-label={`${axis}軸をプラス90度回転`}>
+              ＋90°
+            </button>
+          </div>
+        ))}
       </div>
-      <div className="hint">半透明のプレビューを見ながら変えられるよ</div>
+      <button className="mini reset-placement-button" onClick={resetPendingRotation}>姿勢を戻す</button>
+      <div className="hint">
+        半透明プレビューと右上の方向キューブを見ながら調整できるよ
+      </div>
     </section>
   );
 }

@@ -65,8 +65,8 @@ test.describe("空キャンバスの開始案内", () => {
 
     await page.getByRole("button", { name: /取付面: 底面/ }).click();
     await expect(page.getByRole("button", { name: /取付面: うしろ面/ })).toBeVisible();
-    await page.getByRole("button", { name: "配置する向きを右へ90度" }).click();
-    await expect(page.getByText("向き 90°")).toBeVisible();
+    await page.getByRole("button", { name: "Z軸をプラス90度回転" }).click();
+    await expect(page.locator(".pending-axis-row").filter({ hasText: "Z" })).toContainText("90°");
 
     const canvas = page.locator("canvas");
     const box = await canvas.boundingBox();
@@ -82,6 +82,35 @@ test.describe("空キャンバスの開始案内", () => {
     const q = new Quaternion(quat[1], quat[2], quat[3], quat[0]);
     const driveAxis = new Vector3(0, 0, 1).applyQuaternion(q);
     expect(Math.abs(driveAxis.z)).toBeLessThan(1e-6);
+  });
+
+  test("配置中の視点ドラッグでは床にパーツを置かない", async ({ page }) => {
+    await page.locator(".part-card").filter({ hasText: "いた(中)" }).click();
+    const canvas = page.locator("canvas");
+    const box = await canvas.boundingBox();
+    expect(box).not.toBeNull();
+    if (!box) return;
+
+    await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.65);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width * 0.65, box.y + box.height * 0.55, { steps: 8 });
+    await page.mouse.up();
+    await expect(page.locator(".statusbar").getByText("0 g", { exact: true })).toBeVisible();
+
+    await page.mouse.click(box.x + box.width * 0.5, box.y + box.height * 0.7);
+    await expect(page.locator(".statusbar").getByText("9 g", { exact: true })).toBeVisible();
+  });
+
+  test("床配置前に板を立てる姿勢へ変更できる", async ({ page }) => {
+    await page.locator(".part-card").filter({ hasText: "いた(中)" }).click();
+    await page.getByRole("button", { name: "X軸をプラス90度回転" }).click();
+    await expect(page.locator(".pending-axis-row").filter({ hasText: "X" })).toContainText("90°");
+    await page.getByRole("button", { name: "X軸をマイナス90度回転" }).click();
+    await expect(page.locator(".pending-axis-row").filter({ hasText: "X" })).toContainText("0°");
+    await page.getByRole("button", { name: "Y軸をマイナス90度回転" }).click();
+    await expect(page.locator(".pending-axis-row").filter({ hasText: "Y" })).toContainText("270°");
+    await page.getByRole("button", { name: "姿勢を戻す" }).click();
+    await expect(page.locator(".pending-axis-row").filter({ hasText: "Y" })).toContainText("0°");
   });
 
   test("カタログをおすすめ・検索・全パーツで切り替えられる", async ({ page }) => {

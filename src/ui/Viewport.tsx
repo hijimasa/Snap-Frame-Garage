@@ -1,12 +1,23 @@
 // 3D組立ビュー:穴スナップ接続・自由配置(床タップ)・ゴーストプレビュー・
 // ドラッグ移動・ピン結合・重心表示・支持多角形・ポーズプレビュー
-import { Html, Line, OrbitControls } from "@react-three/drei";
-import { Canvas, type ThreeEvent } from "@react-three/fiber";
+import {
+  GizmoHelper,
+  GizmoViewcube,
+  GizmoViewport,
+  Html,
+  Line,
+  OrbitControls,
+  useGizmoContext,
+} from "@react-three/drei";
+import { Canvas, type ThreeEvent, useFrame, useThree } from "@react-three/fiber";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   Color,
+  CanvasTexture,
+  Camera,
   DoubleSide,
   ExtrudeGeometry,
+  Group,
   InstancedMesh,
   Matrix4,
   Quaternion,
@@ -53,6 +64,140 @@ const STATUS_COLOR: Record<string, string> = {
 
 const snap5 = (v: number) => Math.round(v / 5) * 5;
 const HOLE_MARKER_LENGTH_MM = 8;
+
+const VIEW_FACES = [
+  { label: "前", direction: new Vector3(1, 0, 0) },
+  { label: "後", direction: new Vector3(-1, 0, 0) },
+  { label: "左", direction: new Vector3(0, 1, 0) },
+  { label: "右", direction: new Vector3(0, -1, 0) },
+  { label: "上", direction: new Vector3(0, 0, 1) },
+  { label: "下", direction: new Vector3(0, 0, -1) },
+] as const;
+
+function ViewFaceLabel({
+  label,
+  direction,
+  texture,
+  viewCamera,
+}: {
+  label: string;
+  direction: Vector3;
+  texture: CanvasTexture;
+  viewCamera: Camera;
+}) {
+  const { tweenCamera } = useGizmoContext();
+  const ref = useRef<Group>(null);
+  const normal = useMemo(() => direction.clone().normalize(), [direction]);
+  const position = useMemo(() => normal.clone().multiplyScalar(0.506), [normal]);
+
+  useFrame(() => {
+    if (!ref.current) return;
+    // 画面上方向を面へ射影した理想角を、Fusion 360風に90°単位へ丸める。
+    const screenUp = new Vector3(0, 1, 0).applyQuaternion(viewCamera.quaternion);
+    const faceUp = screenUp.addScaledVector(normal, -screenUp.dot(normal));
+    if (faceUp.lengthSq() < 1e-6) return;
+    faceUp.normalize();
+    const idealRight = new Vector3().crossVectors(faceUp, normal).normalize();
+    const baseUp =
+      Math.abs(normal.z) < 0.9
+        ? new Vector3(0, 0, 1)
+        : new Vector3(0, 1, 0);
+    baseUp.addScaledVector(normal, -baseUp.dot(normal)).normalize();
+    const baseRight = new Vector3().crossVectors(baseUp, normal).normalize();
+    const idealAngle = Math.atan2(idealRight.dot(baseUp), idealRight.dot(baseRight));
+    const snappedAngle = Math.round(idealAngle / (Math.PI / 2)) * (Math.PI / 2);
+    const cos = Math.cos(snappedAngle);
+    const sin = Math.sin(snappedAngle);
+    const faceRight = baseRight.clone().multiplyScalar(cos).addScaledVector(baseUp, sin);
+    const snappedUp = baseUp.clone().multiplyScalar(cos).addScaledVector(baseRight, -sin);
+    ref.current.quaternion.setFromRotationMatrix(
+      new Matrix4().makeBasis(faceRight, snappedUp, normal)
+    );
+  });
+
+  return (
+    <group ref={ref} position={position}>
+      <mesh
+        onClick={(event) => {
+          event.stopPropagation();
+          tweenCamera(direction);
+        }}
+      >
+        <planeGeometry args={[0.86, 0.86]} />
+        <meshBasicMaterial
+          map={texture}
+          transparent
+          depthTest
+          depthWrite={false}
+          polygonOffset
+          polygonOffsetFactor={-2}
+          toneMapped={false}
+        />
+      </mesh>
+    </group>
+  );
+}
+
+/** 面へ貼り付き、投影時の上方向だけを画面に揃えるビューキューブ用ラベル。 */
+function ReadableViewLabels({ viewCamera }: { viewCamera: Camera }) {
+  const textures = useMemo(
+    () =>
+      VIEW_FACES.map(({ label }) => {
+        const canvas = document.createElement("canvas");
+        canvas.width = 256;
+        canvas.height = 128;
+        const ctx = canvas.getContext("2d")!;
+        ctx.fillStyle = "#18202b";
+        ctx.font = "bold 104px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(label, 128, 68);
+        return new CanvasTexture(canvas);
+      }),
+    []
+  );
+  useLayoutEffect(() => () => textures.forEach((texture) => texture.dispose()), [textures]);
+
+  return (
+    <group scale={60}>
+      {VIEW_FACES.map(({ label, direction }, index) => (
+        <ViewFaceLabel
+          key={label}
+          label={label}
+          direction={direction}
+          texture={textures[index]}
+          viewCamera={viewCamera}
+        />
+      ))}
+    </group>
+  );
+}
+
+function ViewNavigation() {
+  const viewCamera = useThree((state) => state.camera);
+  return (
+    <>
+      <GizmoHelper alignment="top-right" margin={[72, 72]}>
+        <GizmoViewcube
+          faces={["", "", "", "", "", ""]}
+          color="#e7eaf0"
+          hoverColor="#79c7ff"
+          textColor="#18202b"
+          strokeColor="#526071"
+        />
+        <ReadableViewLabels viewCamera={viewCamera} />
+      </GizmoHelper>
+      <GizmoHelper alignment="top-right" margin={[72, 178]} renderPriority={2}>
+        <GizmoViewport
+          axisColors={["#ff365d", "#36d979", "#368cff"]}
+          labels={["X", "Y", "Z"]}
+          labelColor="#10151d"
+          axisHeadScale={1.15}
+        />
+      </GizmoHelper>
+    </>
+  );
+}
 
 /** 穴マーカーを中心面から部品の両表面まで届かせるための奥行き倍率。 */
 export const holeMarkerDepthScale = (thicknessMm: number) =>
@@ -262,6 +407,8 @@ export function Viewport() {
   const pendingDefId = useStore((s) => s.pendingDefId);
   const pendingMountFace = useStore((s) => s.pendingMountFace);
   const pendingAngleDeg = useStore((s) => s.pendingAngleDeg);
+  const pendingTiltXDeg = useStore((s) => s.pendingTiltXDeg);
+  const pendingTiltYDeg = useStore((s) => s.pendingTiltYDeg);
   const attachPart = useStore((s) => s.attachPart);
   const placeFreePart = useStore((s) => s.placeFreePart);
   const setFreePartPos = useStore((s) => s.setFreePartPos);
@@ -446,7 +593,13 @@ export function Viewport() {
       faces[pendingMountFace % Math.max(1, faces.length)] ?? defaultAttachHole(def);
     if (!child) return null;
     if (hover.kind === "floor") {
-      const q = floorPlacementQuaternion(child, pendingAngleDeg);
+      const q = floorPlacementQuaternion(
+        child,
+        pendingAngleDeg,
+        pendingTiltXDeg,
+        pendingTiltYDeg,
+        def.contact === "caster"
+      );
       const minZ = Math.min(
         ...defBBoxCorners(def).map((corner) => corner.clone().applyQuaternion(q).z)
       );
@@ -463,7 +616,15 @@ export function Viewport() {
       pendingAngleDeg,
       hover.h.side
     );
-  }, [pendingDefId, pendingMountFace, pendingAngleDeg, hover, floorZModel]);
+  }, [
+    pendingDefId,
+    pendingMountFace,
+    pendingAngleDeg,
+    pendingTiltXDeg,
+    pendingTiltYDeg,
+    hover,
+    floorZModel,
+  ]);
 
   // 支持多角形の形状
   const polyPoints = stability.supportPolygonXY;
@@ -501,6 +662,7 @@ export function Viewport() {
         maxDistance={2000}
         minDistance={40}
       />
+      <ViewNavigation />
 
       {/* 床とグリッド(5mmピッチ=タミヤ互換)。取付モードでは床タップで自由配置 */}
       <mesh
@@ -515,6 +677,8 @@ export function Viewport() {
         }}
         onClick={(e) => {
           if (!pendingDefId) return;
+          // OrbitControlsの視点ドラッグ後にもclickが発火するため、移動を伴う操作は配置しない。
+          if (e.delta > 4) return;
           e.stopPropagation();
           placeFreePart(pendingDefId, e.point.x, e.point.y, floorZModel);
         }}

@@ -4,6 +4,8 @@
 
 子どもやライトユーザーが、インストール・アカウントなしで「組む → 整える → 書き出す → (姉妹シミュレータで)操縦する → 直す」のループを回せることを目指した MVP 実装です。企画の詳細は [docs/robot_builder_kikakusho.md](docs/robot_builder_kikakusho.md)(別紙:[フレーム方式検討](docs/frame_design_kentou.md) / [パーツカタログ仕様](docs/frame_parts_catalog.md))を参照。
 
+座標系はROS REP-103に合わせ、**+Xが正面、+Yが左、+Zが上**です。3Dビュー右上のビューキューブから正面・側面・上面へ移動できます。
+
 ## 動かし方
 
 ```bash

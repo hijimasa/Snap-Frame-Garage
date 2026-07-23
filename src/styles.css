@@ -372,6 +372,30 @@ body,
   color: #cdd3e0;
   font-size: 12px;
 }
+.pending-axis-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 7px;
+}
+.pending-axis-row {
+  display: grid;
+  grid-template-columns: 20px 1fr 54px 54px;
+  align-items: center;
+  gap: 5px;
+  color: #cdd3e0;
+  font-size: 12px;
+}
+.axis-label {
+  font-size: 13px;
+}
+.axis-x { color: #ff5b75; }
+.axis-y { color: #55e08b; }
+.axis-z { color: #5b9dff; }
+.reset-placement-button {
+  width: 100%;
+  margin-top: 7px;
+}
 .primary-action {
   width: 100%;
   padding-block: 7px;

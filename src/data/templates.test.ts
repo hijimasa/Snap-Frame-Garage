@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { Quaternion, Vector3 } from "three";
 import { bodyDisplayMatrix, buildAssembly, linkDeltas } from "../core/assembly";
 import { buildExportData } from "../core/export/exportData";
 import { exportMjcf } from "../core/export/mjcf";
@@ -27,8 +28,17 @@ describe.each(TEMPLATES)("テンプレート: $id", (tpl) => {
     expect(stability.supportPolygonXY.length).toBeGreaterThanOrEqual(3);
   });
 
-  it("左右対称(重心Xがほぼ0)", () => {
-    expect(Math.abs(summary.cogWorldMm.x)).toBeLessThan(6);
+  it("ROS座標で左右対称(重心Yがほぼ0)", () => {
+    expect(Math.abs(summary.cogWorldMm.y)).toBeLessThan(6);
+  });
+
+  it("ROS座標系(+X正面・+Y左・+Z上)で配置される", () => {
+    const rootPose = asm.poses.get(model.parts[0].id)!;
+    const q = new Quaternion().setFromRotationMatrix(rootPose);
+    const oldForward = new Vector3(0, 1, 0).applyQuaternion(q);
+    const oldRight = new Vector3(1, 0, 0).applyQuaternion(q);
+    expect(oldForward.x).toBeGreaterThan(0.999);
+    expect(oldRight.y).toBeLessThan(-0.999);
   });
 
   it("サーボの駆動軸はすべて水平(歩行・走行の回転軸)", () => {

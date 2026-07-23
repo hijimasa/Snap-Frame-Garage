@@ -35,4 +35,21 @@ describe("配置前の取付面", () => {
     expect(Math.abs(leftAxis.z)).toBeLessThan(1e-6);
     expect(Math.abs(rightAxis.z)).toBeLessThan(1e-6);
   });
+
+  it("ころキャスターの設計時姿勢を保つと球が床側を向く", () => {
+    const caster = getDef("WH-CAST");
+    const face = mountingFacesOf(caster)[0];
+    const q = floorPlacementQuaternion(face, 0, 0, 0, true);
+    const ball = new Vector3(...caster.geoms[1].posMm!).applyQuaternion(q);
+    expect(ball.z).toBeLessThan(0);
+  });
+
+  it("床配置で板やほねをX軸まわりに立てられる", () => {
+    const beam = getDef("FR-B060");
+    const face = mountingFacesOf(beam)[0];
+    const q = floorPlacementQuaternion(face, 0, 90, 0);
+    const thicknessAxis = face.normal.clone().applyQuaternion(q);
+    expect(Math.abs(thicknessAxis.y)).toBeGreaterThan(0.999);
+    expect(Math.abs(thicknessAxis.z)).toBeLessThan(1e-6);
+  });
 });

@@ -133,15 +133,26 @@ export function mountingFacesOf(def: PartDef): HoleInfo[] {
   });
 }
 
-/** 選んだ取付面を床へ向け、Z軸まわりに向きを調整した自由配置姿勢。 */
-export function floorPlacementQuaternion(childHole: HoleInfo, angleDeg: number): Quaternion {
+/**
+ * 床への自由配置姿勢。取付面を床へ向けた基準姿勢から、3Dプリンタの配置ツールと
+ * 同様にworld X/Y/Z軸まわりへ回転できる。接地専用パーツは設計時の上下を維持する。
+ */
+export function floorPlacementQuaternion(
+  childHole: HoleInfo,
+  zDeg: number,
+  xDeg = 0,
+  yDeg = 0,
+  preserveAuthoredUp = false
+): Quaternion {
   const down = new Vector3(0, 0, -1);
-  const align = new Quaternion().setFromUnitVectors(childHole.normal.clone().normalize(), down);
-  const twist = new Quaternion().setFromAxisAngle(
-    new Vector3(0, 0, 1),
-    (angleDeg * Math.PI) / 180
-  );
-  return twist.multiply(align).normalize();
+  const align = preserveAuthoredUp
+    ? new Quaternion()
+    : new Quaternion().setFromUnitVectors(childHole.normal.clone().normalize(), down);
+  const rad = Math.PI / 180;
+  const qx = new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), xDeg * rad);
+  const qy = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), yDeg * rad);
+  const qz = new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), zDeg * rad);
+  return qz.multiply(qy).multiply(qx).multiply(align).normalize();
 }
 
 /**
