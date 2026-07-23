@@ -34,6 +34,8 @@ export default function App() {
   const toast = useStore((s) => s.toast);
   const loadTemplate = useStore((s) => s.loadTemplate);
   const [templateOpen, setTemplateOpen] = useState(false);
+  const [fileMenuOpen, setFileMenuOpen] = useState(false);
+  const [helpMenuOpen, setHelpMenuOpen] = useState(false);
   // はじめての起動では説明ポップアップを開く
   const [onboardOpen, setOnboardOpen] = useState(() => {
     try {
@@ -57,6 +59,8 @@ export default function App() {
       } else if (e.key === "Escape") {
         setPendingDef(null);
         setLinkMode(false);
+        setFileMenuOpen(false);
+        setHelpMenuOpen(false);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -77,7 +81,10 @@ export default function App() {
   return (
     <div className="app">
       <header className="topbar">
-        <span className="logo">🔩 Snap Frame Garage</span>
+        <span className="logo">
+          <span aria-hidden="true">🔩</span>
+          <span className="logo-text">Snap Frame Garage</span>
+        </span>
         <input
           className="name-input"
           value={model.name}
@@ -91,30 +98,96 @@ export default function App() {
           ↷
         </button>
         <span className="spacer" />
-        <button className="toolbtn" onClick={() => setTemplateOpen(true)}>
-          🤖 ひながた
-        </button>
-        <button className="toolbtn" onClick={() => setTutorialOpen(!tutorialOpen)}>
-          🛠 ガイド
-        </button>
-        <button className="toolbtn" onClick={() => setOnboardOpen(true)} title="このアプリの説明">
-          ❓ せつめい
-        </button>
         <button
           className="toolbtn"
           onClick={() => {
-            if (model.parts.length && !confirm("いまのロボットを消して、新しく作る?")) return;
-            newProject();
+            setTemplateOpen(true);
+            setFileMenuOpen(false);
+            setHelpMenuOpen(false);
           }}
         >
-          ✨ 新しく作る
+          🤖 ひながた
         </button>
-        <button className="toolbtn" onClick={saveFile}>
-          💾 保存
-        </button>
-        <button className="toolbtn" onClick={() => fileRef.current?.click()}>
-          📂 ひらく
-        </button>
+        <div className="toolbar-menu">
+          <button
+            className={`toolbtn${fileMenuOpen ? " active" : ""}`}
+            aria-expanded={fileMenuOpen}
+            aria-haspopup="menu"
+            onClick={() => {
+              setFileMenuOpen((open) => !open);
+              setHelpMenuOpen(false);
+            }}
+          >
+            📁 ファイル
+          </button>
+          {fileMenuOpen && (
+            <div className="toolbar-menu-popover" role="menu" aria-label="ファイル">
+              <button
+                role="menuitem"
+                onClick={() => {
+                  if (model.parts.length && !confirm("いまのロボットを消して、新しく作る?")) return;
+                  newProject();
+                  setFileMenuOpen(false);
+                }}
+              >
+                ✨ 新しく作る
+              </button>
+              <button
+                role="menuitem"
+                onClick={() => {
+                  saveFile();
+                  setFileMenuOpen(false);
+                }}
+              >
+                💾 保存
+              </button>
+              <button
+                role="menuitem"
+                onClick={() => {
+                  fileRef.current?.click();
+                  setFileMenuOpen(false);
+                }}
+              >
+                📂 ひらく
+              </button>
+            </div>
+          )}
+        </div>
+        <div className="toolbar-menu">
+          <button
+            className={`toolbtn${helpMenuOpen ? " active" : ""}`}
+            aria-expanded={helpMenuOpen}
+            aria-haspopup="menu"
+            onClick={() => {
+              setHelpMenuOpen((open) => !open);
+              setFileMenuOpen(false);
+            }}
+          >
+            ❓ ヘルプ
+          </button>
+          {helpMenuOpen && (
+            <div className="toolbar-menu-popover" role="menu" aria-label="ヘルプ">
+              <button
+                role="menuitem"
+                onClick={() => {
+                  setTutorialOpen(!tutorialOpen);
+                  setHelpMenuOpen(false);
+                }}
+              >
+                🛠 組み立てガイド
+              </button>
+              <button
+                role="menuitem"
+                onClick={() => {
+                  setOnboardOpen(true);
+                  setHelpMenuOpen(false);
+                }}
+              >
+                ❓ アプリのせつめい
+              </button>
+            </div>
+          )}
+        </div>
         <input
           ref={fileRef}
           type="file"
@@ -134,7 +207,7 @@ export default function App() {
         />
         <label className="mode-toggle" title="正式用語+詳細数値の表示">
           <input type="checkbox" checked={adult} onChange={(e) => setAdultMode(e.target.checked)} />
-          おとなモード
+          <span className="mode-label">おとなモード</span>
         </label>
       </header>
 

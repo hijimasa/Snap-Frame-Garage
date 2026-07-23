@@ -48,6 +48,21 @@ test.describe("空キャンバスの開始案内", () => {
     await expect(page.locator(".part-card")).toHaveCount(15);
   });
 
+  test("上部の低頻度操作をファイルとヘルプのメニューにまとめる", async ({ page }) => {
+    await expect(page.getByRole("button", { name: "保存" })).toBeHidden();
+    await page.getByRole("button", { name: "ファイル" }).click();
+    await expect(page.getByRole("menu", { name: "ファイル" })).toBeVisible();
+    await expect(page.getByRole("menuitem", { name: "保存" })).toBeVisible();
+    await expect(page.getByRole("menuitem", { name: "ひらく" })).toBeVisible();
+
+    await page.getByRole("button", { name: "ヘルプ" }).click();
+    await expect(page.getByRole("menu", { name: "ファイル" })).toBeHidden();
+    await expect(page.getByRole("menuitem", { name: "組み立てガイド" })).toBeVisible();
+
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("menu", { name: "ヘルプ" })).toBeHidden();
+  });
+
   test("ひながた選択を開くと開始案内と競合しない", async ({ page }) => {
     const start = page.getByRole("region", { name: "ロボット作りを始める" });
     await page.getByRole("button", { name: "ひながたから始める" }).click();
@@ -69,6 +84,9 @@ test.describe("空キャンバスの開始案内", () => {
       await expect(start).toBeVisible();
       await expect(page.getByRole("button", { name: "おすすめの土台を置く" })).toBeInViewport();
       await expect(page.getByRole("button", { name: "ひながたから始める" })).toBeInViewport();
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)
+      ).toBe(true);
     });
   }
 });
