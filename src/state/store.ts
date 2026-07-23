@@ -47,7 +47,7 @@ interface Store {
   adultMode: boolean;
   tutorialOpen: boolean;
   exportOpen: boolean;
-  toast: string | null;
+  toast: { message: string; undoable: boolean } | null;
 
   commit: (m: RobotModel) => void;
   undo: () => void;
@@ -96,7 +96,8 @@ interface Store {
   setAdultMode: (v: boolean) => void;
   setTutorialOpen: (v: boolean) => void;
   setExportOpen: (v: boolean) => void;
-  showToast: (msg: string) => void;
+  showToast: (msg: string, undoable?: boolean) => void;
+  clearToast: () => void;
   newProject: () => void;
   loadTemplate: (id: string) => void;
   loadProjectJson: (json: string) => void;
@@ -145,13 +146,35 @@ export const useStore = create<Store>((set, get) => ({
     const { past, model, future } = get();
     if (!past.length) return;
     const prev = past[past.length - 1];
-    set({ model: prev, past: past.slice(0, -1), future: [model, ...future], selection: null });
+    set({
+      model: prev,
+      past: past.slice(0, -1),
+      future: [model, ...future],
+      selection: null,
+      toast: null,
+    });
+    try {
+      localStorage.setItem(AUTOSAVE_KEY, serializeProject(prev));
+    } catch {
+      /* ローカルファースト */
+    }
   },
   redo() {
     const { past, model, future } = get();
     if (!future.length) return;
     const next = future[0];
-    set({ model: next, past: [...past, model], future: future.slice(1), selection: null });
+    set({
+      model: next,
+      past: [...past, model],
+      future: future.slice(1),
+      selection: null,
+      toast: null,
+    });
+    try {
+      localStorage.setItem(AUTOSAVE_KEY, serializeProject(next));
+    } catch {
+      /* ローカルファースト */
+    }
   },
   setSelection: (id) => set({ selection: id, pendingDefId: null }),
   setPendingDef: (id) =>
@@ -178,7 +201,7 @@ export const useStore = create<Store>((set, get) => ({
   setLinkFirstHole: (h) => set({ linkFirstHole: h }),
 
   placeFreePart(defId, xMm, yMm, floorZMm) {
-    const { model, commit, pendingMountFace, pendingAngleDeg } = get();
+    const { model, commit, pendingMountFace, pendingAngleDeg, showToast } = get();
     const def = getDef(defId);
     const faces = mountingFacesOf(def);
     const child = faces[pendingMountFace % Math.max(1, faces.length)] ?? defaultAttachHole(def);
@@ -214,6 +237,7 @@ export const useStore = create<Store>((set, get) => ({
       nextSeq: model.nextSeq + 1,
     });
     set({ selection: id });
+    showToast("置いたよ!向きや位置はあとからでも変えられる", true);
   },
 
   attachPart(parentPartId, parentHoleKey, side) {
@@ -266,7 +290,12 @@ export const useStore = create<Store>((set, get) => ({
       nextSeq: model.nextSeq + 1,
     });
     set({ selection: id });
-    if (parentHole.kind === "drive") showToast("駆動穴につけたよ!サーボが回すと一緒に動く");
+    showToast(
+      parentHole.kind === "drive"
+        ? "駆動穴につけたよ!サーボが回すと一緒に動く"
+        : "ガチャン!パーツをくっつけた",
+      true
+    );
   },
 
   pinHoles(a, b, coincident) {
@@ -294,7 +323,7 @@ export const useStore = create<Store>((set, get) => ({
         side: 1,
       };
       commit({ ...model, connections: [...model.connections, conn], nextSeq: model.nextSeq + 1 });
-      showToast("ピンで留めた!(1本=くるくる回る)");
+      showToast("ピンで留めた!(1本=くるくる回る)", true);
       return true;
     }
     // 別の島 → 2つめの穴を1つめの穴に吸着させて島ごと結合
@@ -310,7 +339,7 @@ export const useStore = create<Store>((set, get) => ({
       return false;
     }
     commit(joined);
-    showToast("ガチャン!くっつけた(ピン2本=固定。バッジで「回る」にできるよ)");
+    showToast("ガチャン!自動でくっつけた(ピン2本=固定)", true);
     return true;
   },
 
@@ -465,7 +494,7 @@ export const useStore = create<Store>((set, get) => ({
       return;
     }
     commit(next);
-    showToast("はずして自由にしたよ。ドラッグで動かして、📌ピンでとめ直せる");
+    showToast("はずして自由にしたよ。ドラッグで動かして、📌ピンでとめ直せる", true);
   },
 
   rotateChild(childPartId, deltaDeg) {
@@ -520,7 +549,7 @@ export const useStore = create<Store>((set, get) => ({
   },
 
   deletePart(partId) {
-    const { model, commit } = get();
+    const { model, commit, showToast } = get();
     const doomed = subtreeParts(model, partId);
     commit({
       ...model,
@@ -531,6 +560,7 @@ export const useStore = create<Store>((set, get) => ({
       mappings: model.mappings.filter((m) => !doomed.has(m.jointId)),
     });
     set({ selection: null });
+    showToast("パーツを消したよ", true);
   },
 
   deleteConnection(connId) {
@@ -566,11 +596,12 @@ export const useStore = create<Store>((set, get) => ({
   setAdultMode: (v) => set({ adultMode: v }),
   setTutorialOpen: (v) => set({ tutorialOpen: v }),
   setExportOpen: (v) => set({ exportOpen: v }),
-  showToast(msg) {
-    set({ toast: msg });
+  showToast(msg, undoable = false) {
+    set({ toast: { message: msg, undoable } });
     if (toastTimer) clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => set({ toast: null }), 3200);
+    toastTimer = setTimeout(() => set({ toast: null }), undoable ? 6000 : 3200);
   },
+  clearToast: () => set({ toast: null }),
   newProject() {
     const { commit } = get();
     commit(emptyModel());

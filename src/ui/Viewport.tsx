@@ -257,7 +257,10 @@ export function Viewport() {
   const attachPart = useStore((s) => s.attachPart);
   const placeFreePart = useStore((s) => s.placeFreePart);
   const setFreePartPos = useStore((s) => s.setFreePartPos);
+  const rotateFreePart = useStore((s) => s.rotateFreePart);
+  const rotateChild = useStore((s) => s.rotateChild);
   const linkMode = useStore((s) => s.linkMode);
+  const setLinkMode = useStore((s) => s.setLinkMode);
   const linkFirstHole = useStore((s) => s.linkFirstHole);
   const setLinkFirstHole = useStore((s) => s.setLinkFirstHole);
   const pinHoles = useStore((s) => s.pinHoles);
@@ -268,8 +271,6 @@ export function Viewport() {
   const [hover, setHover] = useState<Hover>(null);
   const [dragging, setDragging] = useState(false);
   const [snapHint, setSnapHint] = useState<{ p: Vector3; n: Vector3 } | null>(null);
-  // スナップして置いた直後に出る「ワンクリック結合」のピンボタン
-  const [pinOffer, setPinOffer] = useState<SnapResult | null>(null);
   const dragRef = useRef<{
     partId: string;
     dx: number;
@@ -365,7 +366,6 @@ export function Viewport() {
     setHover(h ? { kind: "hole", h } : null);
 
   const onPickHole = (h: HoverHole) => {
-    setPinOffer(null);
     if (pendingDefId) {
       attachPart(h.partId, h.hole.key, h.side);
       return;
@@ -399,20 +399,6 @@ export function Viewport() {
       pinHoles(linkFirstHole, { partId: h.partId, holeKey: h.hole.key }, coincident);
       setLinkFirstHole(null);
     }
-  };
-
-  const confirmPinOffer = () => {
-    if (!pinOffer) return;
-    pinHoles(
-      {
-        partId: pinOffer.staticHole.partId,
-        holeKey: pinOffer.staticHole.holeKey,
-        side: pinOffer.side,
-      },
-      { partId: pinOffer.dragHole.partId, holeKey: pinOffer.dragHole.holeKey },
-      true
-    );
-    setPinOffer(null);
   };
 
   // ゴーストプレビューの行列
@@ -457,7 +443,6 @@ export function Viewport() {
       }}
       onPointerMissed={() => {
         useStore.setState({ selection: null });
-        setPinOffer(null);
       }}
       style={{ background: "linear-gradient(#20242c, #2a2f3a)" }}
     >
@@ -495,9 +480,7 @@ export function Viewport() {
         onClick={(e) => {
           if (!pendingDefId) return;
           e.stopPropagation();
-          setPinOffer(null);
           placeFreePart(pendingDefId, e.point.x, e.point.y, floorZModel);
-          showToast("置いたよ!ドラッグで穴に近づけてスナップ→金色のピンでつながる");
         }}
       >
         <boxGeometry args={[700, 700, 1]} />
@@ -537,7 +520,6 @@ export function Viewport() {
                     const hit = rayToFloor(e.ray, 0);
                     if (!hit) return;
                     const bp = inst.basePose?.posMm ?? [0, 0, 0];
-                    setPinOffer(null);
                     dragRef.current = {
                       partId: inst.id,
                       dx: bp[0] - hit.x,
@@ -616,10 +598,19 @@ export function Viewport() {
                     (e.target as Element).releasePointerCapture?.(e.pointerId);
                     const bp = model.parts.find((p) => p.id === d.partId)?.basePose?.posMm;
                     setFreePartPos(d.partId, d.lastPos ?? (bp as [number, number, number]) ?? [0, 0, 0], true);
-                    if (d.lastSnap) {
-                      setPinOffer(d.lastSnap);
-                      showToast("穴がぴったり重なった!金色のピンを押すと、この向きのままつながるよ");
-                    }
+                    if (d.lastSnap)
+                      pinHoles(
+                        {
+                          partId: d.lastSnap.staticHole.partId,
+                          holeKey: d.lastSnap.staticHole.holeKey,
+                          side: d.lastSnap.side,
+                        },
+                        {
+                          partId: d.lastSnap.dragHole.partId,
+                          holeKey: d.lastSnap.dragHole.holeKey,
+                        },
+                        true
+                      );
                     dragRef.current = null;
                     setDragging(false);
                     setSnapHint(null);
@@ -722,54 +713,71 @@ export function Viewport() {
           </group>
         )}
 
-        {/* スナップして置いた直後の「ワンクリック結合」ピンボタン */}
-        {pinOffer && (
-          <group
-            position={pinOffer.holeP}
-            quaternion={new Quaternion().setFromUnitVectors(
-              new Vector3(0, 0, 1),
-              pinOffer.n.clone().multiplyScalar(pinOffer.side)
-            )}
-            onClick={(e) => {
-              e.stopPropagation();
-              confirmPinOffer();
-            }}
-            onPointerOver={() => (document.body.style.cursor = "pointer")}
-            onPointerOut={() => (document.body.style.cursor = "")}
-          >
-            {/* 押しピン風:頭+軸 */}
-            <mesh position={[0, 0, 9]}>
-              <sphereGeometry args={[3.6, 14, 10]} />
-              <meshStandardMaterial
-                color="#f5c211"
-                emissive="#f5c211"
-                emissiveIntensity={0.55}
-                depthTest={false}
-              />
-            </mesh>
-            <mesh position={[0, 0, 4]} rotation={[Math.PI / 2, 0, 0]}>
-              <cylinderGeometry args={[1.1, 1.1, 10, 10]} />
-              <meshStandardMaterial
-                color="#f5c211"
-                emissive="#f5c211"
-                emissiveIntensity={0.35}
-                depthTest={false}
-              />
-            </mesh>
-            <Html position={[0, 0, 15]} center zIndexRange={[12, 1]}>
-              <button
-                type="button"
-                className="snap-connect-cta"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  confirmPinOffer();
-                }}
-              >
-                📌 ここをつなぐ
-              </button>
-            </Html>
-          </group>
-        )}
+        {/* 選択したパーツのすぐそばで、よく使う操作を完結させる */}
+        {selection &&
+          !holeMode &&
+          !dragging &&
+          (() => {
+            const inst = model.parts.find((p) => p.id === selection);
+            const dm = displayMs.get(selection);
+            if (!inst || !dm) return null;
+            const tree = model.connections.find(
+              (c) => c.kind === "tree" && c.childPart === selection
+            );
+            const special =
+              tree && ("special" in tree.parentHole || "special" in tree.childHole);
+            const pos = new Vector3().setFromMatrixPosition(dm.main);
+            const top = Math.max(
+              ...defBBoxCorners(getDef(inst.defId)).map(
+                (corner) => corner.applyMatrix4(dm.main).z
+              )
+            );
+            pos.z = top + 14;
+            const free = islandRoots.has(selection);
+            return (
+              <Html key={`quick-${selection}`} position={pos} center zIndexRange={[12, 1]}>
+                <div
+                  className="part-quick-toolbar"
+                  role="toolbar"
+                  aria-label="選んだパーツのかんたん操作"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (free) rotateFreePart(selection, "z", 90);
+                      else rotateChild(selection, 90);
+                      showToast("90°回したよ", true);
+                    }}
+                  >
+                    ↻ 90°回す
+                  </button>
+                  {free && (
+                    <button type="button" onClick={() => setLinkMode(true)}>
+                      📌 つなぐ
+                    </button>
+                  )}
+                  {tree && !special && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPins(tree.id, tree.pins === 1 ? 2 : 1);
+                        showToast(
+                          tree.pins === 1
+                            ? "ピン2本:しっかり固定"
+                            : "ピン1本:くるくる回る",
+                          true
+                        );
+                      }}
+                    >
+                      {tree.pins === 1 ? "🔒 固定する" : "🔄 回るようにする"}
+                    </button>
+                  )}
+                </div>
+              </Html>
+            );
+          })()}
 
         {/* ドラッグ中の穴スナップのハイライト */}
         {snapHint && (
@@ -823,7 +831,10 @@ export function Viewport() {
                 if (holeMode) return;
                 e.stopPropagation();
                 setPins(c.id, passive ? 2 : 1);
-                showToast(passive ? "ピン2本:しっかり固定" : "ピン1本:くるくる回る");
+                showToast(
+                  passive ? "ピン2本:しっかり固定" : "ピン1本:くるくる回る",
+                  true
+                );
               }}
             >
               <sphereGeometry args={[2.6, 12, 8]} />

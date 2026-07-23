@@ -32,6 +32,7 @@ export default function App() {
   const setLinkMode = useStore((s) => s.setLinkMode);
   const placeFreePart = useStore((s) => s.placeFreePart);
   const toast = useStore((s) => s.toast);
+  const clearToast = useStore((s) => s.clearToast);
   const loadTemplate = useStore((s) => s.loadTemplate);
   const [templateOpen, setTemplateOpen] = useState(false);
   const [fileMenuOpen, setFileMenuOpen] = useState(false);
@@ -246,7 +247,22 @@ export default function App() {
             </div>
           )}
           <Tutorial />
-          {toast && <div className="toast">{toast}</div>}
+          {toast && (
+            <div className="toast" role="status">
+              <span>{toast.message}</span>
+              {toast.undoable && (
+                <button
+                  className="mini toast-undo"
+                  onClick={() => {
+                    undo();
+                    clearToast();
+                  }}
+                >
+                  ↶ 元に戻す
+                </button>
+              )}
+            </div>
+          )}
         </div>
         <aside className="right">
           <Inspector />
