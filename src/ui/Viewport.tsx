@@ -445,7 +445,7 @@ export function Viewport() {
 
   return (
     <Canvas
-      shadows
+      shadows="basic"
       gl={{ preserveDrawingBuffer: true, antialias: true }}
       camera={{ position: [260, -260, 200], fov: 40, near: 1, far: 8000, up: [0, 0, 1] }}
       onCreated={({ gl, camera }) => {

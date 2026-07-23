@@ -1,15 +1,18 @@
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { getDef } from "./data/catalog";
 import { TEMPLATES } from "./data/templates";
 import { useStore } from "./state/store";
 import { CatalogPanel } from "./ui/CatalogPanel";
 import { EmptyCanvasStart } from "./ui/EmptyCanvasStart";
-import { ExportDialog } from "./ui/ExportDialog";
 import { Inspector } from "./ui/Inspector";
 import { Onboarding } from "./ui/Onboarding";
 import { StatusBar } from "./ui/StatusBar";
 import { Tutorial } from "./ui/Tutorial";
 import { Viewport } from "./ui/Viewport";
+
+const ExportDialog = lazy(() =>
+  import("./ui/ExportDialog").then((module) => ({ default: module.ExportDialog }))
+);
 
 export default function App() {
   const model = useStore((s) => s.model);
@@ -20,6 +23,7 @@ export default function App() {
   const future = useStore((s) => s.future);
   const adult = useStore((s) => s.adultMode);
   const setAdultMode = useStore((s) => s.setAdultMode);
+  const exportOpen = useStore((s) => s.exportOpen);
   const tutorialOpen = useStore((s) => s.tutorialOpen);
   const setTutorialOpen = useStore((s) => s.setTutorialOpen);
   const newProject = useStore((s) => s.newProject);
@@ -47,6 +51,7 @@ export default function App() {
     }
   });
   const fileRef = useRef<HTMLInputElement>(null);
+  const templateDialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -64,11 +69,34 @@ export default function App() {
         setFileMenuOpen(false);
         setHelpMenuOpen(false);
         setTabletDrawer(null);
+        setTemplateOpen(false);
+      } else if (e.key.toLowerCase() === "r" && useStore.getState().selection) {
+        e.preventDefault();
+        const id = useStore.getState().selection!;
+        const attached = useStore
+          .getState()
+          .model.connections.some((c) => c.kind === "tree" && c.childPart === id);
+        if (attached) useStore.getState().rotateChild(id, 90);
+        else useStore.getState().rotateFreePart(id, "z", 90);
+        showToast("選んだパーツを90°回したよ", true);
+      } else if ((e.key === "Delete" || e.key === "Backspace") && useStore.getState().selection) {
+        e.preventDefault();
+        useStore.getState().deletePart(useStore.getState().selection!);
+      } else if (e.key.toLowerCase() === "l") {
+        e.preventDefault();
+        setLinkMode(true);
+      } else if (e.key === "?" || (e.shiftKey && e.key === "/")) {
+        e.preventDefault();
+        setTutorialOpen(true);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [undo, redo, setPendingDef, setLinkMode]);
+  }, [undo, redo, setPendingDef, setLinkMode, setTutorialOpen, showToast]);
+
+  useEffect(() => {
+    if (templateOpen) requestAnimationFrame(() => templateDialogRef.current?.focus());
+  }, [templateOpen]);
 
   useEffect(() => {
     if (pendingDefId) setTabletDrawer(null);
@@ -87,6 +115,9 @@ export default function App() {
 
   return (
     <div className="app">
+      <a className="skip-link" href="#workspace">
+        3D作業エリアへ移動
+      </a>
       <header className="topbar">
         <span className="logo">
           <span aria-hidden="true">🔩</span>
@@ -98,10 +129,22 @@ export default function App() {
           onChange={(e) => setName(e.target.value)}
           placeholder="ロボットのなまえ"
         />
-        <button className="toolbtn" onClick={undo} disabled={past.length === 0} title="もとに戻す (Ctrl+Z)">
+        <button
+          className="toolbtn"
+          onClick={undo}
+          disabled={past.length === 0}
+          title="もとに戻す (Ctrl+Z)"
+          aria-label="もとに戻す"
+        >
           ↶
         </button>
-        <button className="toolbtn" onClick={redo} disabled={future.length === 0} title="やり直す (Ctrl+Y)">
+        <button
+          className="toolbtn"
+          onClick={redo}
+          disabled={future.length === 0}
+          title="やり直す (Ctrl+Y)"
+          aria-label="やり直す"
+        >
           ↷
         </button>
         <button
@@ -230,9 +273,9 @@ export default function App() {
             e.target.value = "";
           }}
         />
-        <label className="mode-toggle" title="正式用語+詳細数値の表示">
+        <label className="mode-toggle" title="表示する情報量を切り替える">
           <input type="checkbox" checked={adult} onChange={(e) => setAdultMode(e.target.checked)} />
-          <span className="mode-label">おとなモード</span>
+          <span className="mode-label">{adult ? "くわしく" : "かんたん"}</span>
         </label>
       </header>
 
@@ -243,7 +286,12 @@ export default function App() {
         >
           <CatalogPanel />
         </aside>
-        <div className="center">
+        <main
+          id="workspace"
+          className="center"
+          tabIndex={-1}
+          aria-label="3D組み立て作業エリア"
+        >
           <Viewport />
           {model.parts.length === 0 &&
             !onboardOpen &&
@@ -290,7 +338,10 @@ export default function App() {
               )}
             </div>
           )}
-        </div>
+          <div className="sr-only" aria-live="polite">
+            キーボード: Rで選択パーツを回転、Lで接続、Deleteで削除、疑問符でヘルプ
+          </div>
+        </main>
         {tabletDrawer && (
           <button
             className="drawer-scrim"
@@ -307,7 +358,11 @@ export default function App() {
       </div>
 
       <StatusBar />
-      <ExportDialog />
+      {exportOpen && (
+        <Suspense fallback={null}>
+          <ExportDialog />
+        </Suspense>
+      )}
       <Onboarding
         open={onboardOpen}
         onClose={() => setOnboardOpen(false)}
@@ -317,10 +372,22 @@ export default function App() {
 
       {templateOpen && (
         <div className="overlay" onClick={() => setTemplateOpen(false)}>
-          <div className="dialog" onClick={(e) => e.stopPropagation()}>
+          <div
+            ref={templateDialogRef}
+            className="dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="template-dialog-title"
+            tabIndex={-1}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="dialog-title">
-              🤖 ひながたから始める
-              <button className="mini" onClick={() => setTemplateOpen(false)}>
+              <span id="template-dialog-title">🤖 ひながたから始める</span>
+              <button
+                className="mini"
+                aria-label="ひながた選択を閉じる"
+                onClick={() => setTemplateOpen(false)}
+              >
                 ✕
               </button>
             </div>

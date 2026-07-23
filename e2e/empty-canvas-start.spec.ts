@@ -114,11 +114,51 @@ test.describe("空キャンバスの開始案内", () => {
     await expect(page.getByRole("menu", { name: "ヘルプ" })).toBeHidden();
   });
 
+  test("かんたん表示と詳細表示で情報量を切り替える", async ({ page }) => {
+    await page.getByRole("button", { name: "ひながたから始める" }).click();
+    await page.locator(".template-card").filter({ hasText: "にりんしゃ" }).click();
+    await expect(page.locator(".inspector > .panel-title")).toContainText("パーツのようす");
+    await expect(page.getByText("コントローラのわりあて", { exact: true })).toBeHidden();
+
+    await page.getByRole("checkbox", { name: "かんたん" }).check();
+    await expect(page.locator(".inspector > .panel-title")).toContainText("設計・プロパティ");
+    await expect(page.getByText("操作割当", { exact: true })).toBeVisible();
+    await expect(page.getByText("詳細", { exact: true })).toBeVisible();
+  });
+
+  test("キーボードで回転・削除・Undo・ヘルプを操作できる", async ({ page }) => {
+    await page.keyboard.press("Tab");
+    await expect(page.getByRole("link", { name: "3D作業エリアへ移動" })).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("main", { name: "3D組み立て作業エリア" })).toBeFocused();
+
+    await page.getByRole("button", { name: "おすすめの土台を置く" }).click();
+    const before = await page.evaluate(() => {
+      const saved = JSON.parse(localStorage.getItem("sfg-autosave")!);
+      return saved.model.parts[0].basePose.quatWxyz;
+    });
+    await page.keyboard.press("r");
+    const after = await page.evaluate(() => {
+      const saved = JSON.parse(localStorage.getItem("sfg-autosave")!);
+      return saved.model.parts[0].basePose.quatWxyz;
+    });
+    expect(after).not.toEqual(before);
+
+    await page.keyboard.press("Delete");
+    await expect(page.getByRole("region", { name: "ロボット作りを始める" })).toBeVisible();
+    await page.keyboard.press("Control+z");
+    await expect(page.getByRole("region", { name: "ロボット作りを始める" })).toBeHidden();
+
+    await page.keyboard.press("Shift+/");
+    await expect(page.getByText("はじめてのロボット(2輪車)")).toBeVisible();
+  });
+
   test("ひながた選択を開くと開始案内と競合しない", async ({ page }) => {
     const start = page.getByRole("region", { name: "ロボット作りを始める" });
     await page.getByRole("button", { name: "ひながたから始める" }).click();
 
     await expect(page.getByText("できあがったロボットを読みこんで")).toBeVisible();
+    await expect(page.getByRole("dialog", { name: "ひながたから始める" })).toBeFocused();
     await expect(start).toBeHidden();
   });
 

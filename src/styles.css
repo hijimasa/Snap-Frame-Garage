@@ -1,6 +1,28 @@
 * {
   box-sizing: border-box;
 }
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid #35c5e4;
+  outline-offset: 2px;
+}
+.skip-link {
+  position: fixed;
+  top: 6px;
+  left: 8px;
+  z-index: 100;
+  padding: 9px 12px;
+  color: #fff;
+  background: #135d78;
+  border-radius: 8px;
+  transform: translateY(-150%);
+}
+.skip-link:focus {
+  transform: translateY(0);
+}
 html,
 body,
 #root {
@@ -169,6 +191,14 @@ body,
   font-weight: bold;
   padding: 10px 12px 6px;
   color: #f5c211;
+}
+.mode-badge {
+  float: right;
+  padding: 2px 6px;
+  color: #cdd3e0;
+  background: #3a4152;
+  border-radius: 999px;
+  font-size: 10px;
 }
 .catalog-controls {
   padding: 2px 8px 10px;

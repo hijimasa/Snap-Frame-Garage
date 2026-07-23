@@ -288,6 +288,7 @@ function MappingSection() {
   const adult = useStore((s) => s.adultMode);
   const setMapping = useStore((s) => s.setMapping);
   const L = labels(adult);
+  if (!adult) return null;
   const servos = model.parts.filter((p) => getDef(p.defId).servo);
   if (servos.length === 0) return null;
   return (
@@ -339,12 +340,15 @@ function DanglingSection() {
       </div>
       {needsAttention > 0 && (
         <div className="hint">
-          ⚠ 固定されていない関節があるよ。動かしたいならそのまま、固定するなら対象を選んで「固定する」を押そう
+          {adult
+            ? "⚠ 閉ループに含まれない受動関節があります。意図しない自由度なら2ピン固定してください"
+            : "⚠ 固定されていない関節があるよ。動かしたいならそのまま、固定するなら対象を選んで「固定する」を押そう"}
         </div>
       )}
       {decorative > 0 && (
         <div className="hint decor-ok">
-          🎀 飾りとして動く関節 {decorative}（尻尾・腕・触角なので、このままでOK）
+          🎀 {adult ? "装飾用受動関節" : "飾りとして動く関節"} {decorative}
+          （{adult ? "意図的な自由度" : "尻尾・腕・触角なので、このままでOK"}）
         </div>
       )}
       {asm.hasLoop && <div className="hint">🎡 からくり(閉ループ)発見!MJCFでは動くよ</div>}
@@ -453,9 +457,13 @@ function PendingPlacementSection() {
 }
 
 export function Inspector() {
+  const adult = useStore((s) => s.adultMode);
   return (
     <div className="inspector">
-      <div className="panel-title">パーツのようす</div>
+      <div className="panel-title">
+        {adult ? "設計・プロパティ" : "パーツのようす"}
+        <span className="mode-badge">{adult ? "詳細" : "かんたん"}</span>
+      </div>
       <NextActionSection />
       <PendingPlacementSection />
       <SelectedPartSection />
