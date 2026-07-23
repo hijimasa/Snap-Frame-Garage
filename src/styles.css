@@ -201,6 +201,26 @@ body,
   padding: 10px 12px;
   border-bottom: 1px solid #333a49;
 }
+.inspector .section.next-action {
+  margin: 0 10px 8px;
+  padding: 10px 12px;
+  background: #2b3140;
+  border: 1px solid #414a5c;
+  border-radius: 10px;
+}
+.next-action-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #f5c211;
+  font-weight: bold;
+}
+.next-action-body {
+  margin-top: 6px;
+  color: #cdd3e0;
+  font-size: 12px;
+  line-height: 1.55;
+}
 .section-title {
   font-weight: bold;
   margin-bottom: 8px;

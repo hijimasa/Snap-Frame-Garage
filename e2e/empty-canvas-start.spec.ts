@@ -12,14 +12,24 @@ test.describe("空キャンバスの開始案内", () => {
   test("おすすめの土台を置き、Undoで空状態へ戻れる", async ({ page }) => {
     const start = page.getByRole("region", { name: "ロボット作りを始める" });
     await expect(start).toBeVisible();
+    await expect(page.getByText("中央の案内からおすすめの土台を置くか")).toBeVisible();
 
     await page.getByRole("button", { name: "おすすめの土台を置く" }).click();
     await expect(start).toBeHidden();
     await expect(page.locator(".statusbar").getByText("9 g", { exact: true })).toBeVisible();
+    await expect(page.getByText("下のボタンで向きや高さを調整しよう")).toBeVisible();
 
     await page.getByTitle("もとに戻す (Ctrl+Z)").click();
     await expect(start).toBeVisible();
     await expect(page.locator(".statusbar").getByText("0 g", { exact: true })).toBeVisible();
+    await expect(page.getByText("中央の案内からおすすめの土台を置くか")).toBeVisible();
+  });
+
+  test("パーツ配置モードでは光る穴を次の操作として案内する", async ({ page }) => {
+    await page.locator(".part-card").filter({ hasText: "マイクロサーボ" }).first().click();
+
+    await expect(page.getByText("「マイクロサーボ」を置く場所を決めよう")).toBeVisible();
+    await expect(page.getByText("光っている穴なら接続、床なら仮置き")).toBeVisible();
   });
 
   test("ひながた選択を開くと開始案内と競合しない", async ({ page }) => {

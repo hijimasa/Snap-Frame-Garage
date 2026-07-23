@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { buildAssembly } from "../core/assembly";
 import { holeKey } from "../core/holes";
 import { partMassProps } from "../core/mass";
+import { exportGate } from "../core/power";
 import { getDef } from "../data/catalog";
 import { INPUT_OPTIONS, useStore } from "../state/store";
 import { INPUT_LABELS, labels } from "./labels";
@@ -26,20 +27,7 @@ function SelectedPartSection() {
   const L = labels(adult);
 
   const inst = model.parts.find((p) => p.id === selection);
-  if (!inst) {
-    return (
-      <div className="section">
-        <div className="hint">
-          パーツをクリックすると、ここでいじれるよ。
-          <br />
-          カタログのパーツを選ぶと、半透明のプレビューが出て、
-          光った穴タップ=くっつける/床タップ=そのへんに置く。
-          <br />
-          置いたパーツは選んでドラッグすると動かせる(自由なパーツのみ)。
-        </div>
-      </div>
-    );
-  }
+  if (!inst) return null;
   const def = getDef(inst.defId);
   const props = partMassProps(def, inst.material);
   const treeConn = model.connections.find((c) => c.kind === "tree" && c.childPart === inst.id);
@@ -339,10 +327,63 @@ function DanglingSection() {
   );
 }
 
+function NextActionSection() {
+  const model = useStore((s) => s.model);
+  const selection = useStore((s) => s.selection);
+  const pendingDefId = useStore((s) => s.pendingDefId);
+  const linkMode = useStore((s) => s.linkMode);
+  const linkFirstHole = useStore((s) => s.linkFirstHole);
+  const adult = useStore((s) => s.adultMode);
+  const gate = useMemo(() => exportGate(model), [model]);
+
+  let icon = "👉";
+  let title = "つぎにすること";
+  let body = "左のカタログから、つぎにつけたいパーツを選ぼう。";
+
+  if (pendingDefId) {
+    icon = "✨";
+    const def = getDef(pendingDefId);
+    const name = adult ? def.displayName.adult : def.displayName.kids;
+    body = `「${name}」を置く場所を決めよう。光っている穴なら接続、床なら仮置きできるよ。`;
+  } else if (linkMode) {
+    icon = "📌";
+    body = linkFirstHole
+      ? "つなぐ相手の穴を選ぼう。Escキーか「やめる」でキャンセルできるよ。"
+      : "まず、つなぎたい穴を1つ選ぼう。重なった穴ならすぐに留められるよ。";
+  } else if (model.parts.length === 0) {
+    icon = "🔩";
+    body = "中央の案内からおすすめの土台を置くか、ひながたを選ぼう。";
+  } else if (selection) {
+    icon = "🛠";
+    body = "下のボタンで向きや高さを調整しよう。不要なら削除や切り離しもできるよ。";
+  } else if (gate.ok) {
+    icon = "🚀";
+    title = "おくり出す準備ができたよ";
+    body = "重さとバランスを確認したら、右下の「ロボットをおくり出す」へ進もう。";
+  } else if (gate.islands > 1) {
+    icon = "🧩";
+    body = `まだ${gate.islands}つのかたまりに分かれているよ。📌ピンで1つにつなげよう。`;
+  } else if (gate.reasons.includes("no-box")) {
+    icon = "🔋";
+    body = "パワーボックスを選んでロボットにつけよう。おくり出すために必要だよ。";
+  }
+
+  return (
+    <section className="section next-action" aria-live="polite">
+      <div className="next-action-label">
+        <span aria-hidden="true">{icon}</span>
+        {title}
+      </div>
+      <div className="next-action-body">{body}</div>
+    </section>
+  );
+}
+
 export function Inspector() {
   return (
     <div className="inspector">
       <div className="panel-title">パーツのようす</div>
+      <NextActionSection />
       <SelectedPartSection />
       <DanglingSection />
       <PoseSection />
