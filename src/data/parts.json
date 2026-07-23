@@ -1,0 +1,752 @@
+[
+  {
+    "id": "SV-MICRO",
+    "category": "actuator",
+    "displayName": { "kids": "マイクロサーボ", "adult": "マイクロサーボ(SG90相当・マウント付)" },
+    "refRealPart": "TowerPro SG90 + 樹脂マウント",
+    "massG": 9,
+    "powerCost": 1,
+    "servo": { "torqueKgCm": 1.8, "speedSecPer60Deg": 0.1, "rangeDeg": 90 },
+    "geoms": [
+      { "type": "box", "sizeMm": [23, 12, 22], "posMm": [-5, 0, 0], "color": "#3d7dd8" },
+      { "type": "box", "sizeMm": [32, 12, 2], "posMm": [-5, 0, 6], "color": "#3d7dd8" },
+      { "type": "cylinder", "radiusMm": 2.5, "heightMm": 2, "posMm": [0, 0, 11.5], "color": "#e8e4da" },
+      { "type": "box", "sizeMm": [40, 20, 3], "posMm": [0, 0, -12.5], "color": "#c8ccd4" },
+      { "type": "box", "sizeMm": [40, 3, 25], "posMm": [0, -8.5, -1.5], "color": "#c8ccd4" },
+      { "type": "cylinder", "radiusMm": 2.5, "heightMm": 2, "posMm": [0, 0, -15], "color": "#c8ccd4" }
+    ],
+    "hornGeoms": [
+      { "type": "cylinder", "radiusMm": 10, "heightMm": 2, "posMm": [0, 0, 13], "color": "#f2efe6" }
+    ],
+    "holes": [
+      { "originMm": [-15, 5, -12.5], "normal": [0, 0, -1], "uAxis": [1, 0, 0], "pitchMm": 10, "rows": 4, "cols": 2, "thicknessMm": 3 },
+      { "originMm": [-15, -8.5, -10], "normal": [0, -1, 0], "uAxis": [1, 0, 0], "pitchMm": 10, "rows": 4, "cols": 2, "thicknessMm": 3 },
+      { "originMm": [-5, 0, 13], "normal": [0, 0, 1], "uAxis": [1, 0, 0], "pitchMm": 10, "rows": 2, "cols": 1, "thicknessMm": 2, "body": "horn" },
+      { "originMm": [0, -5, 13], "normal": [0, 0, 1], "uAxis": [0, 1, 0], "pitchMm": 10, "rows": 2, "cols": 1, "thicknessMm": 2, "body": "horn" }
+    ],
+    "specialHoles": [
+      { "kind": "drive", "posMm": [0, 0, 13], "normal": [0, 0, 1], "thicknessMm": 2 },
+      { "kind": "idler", "posMm": [0, 0, -15], "normal": [0, 0, -1], "thicknessMm": 2 }
+    ],
+    "description": "いちばん小さくて軽いモーター。マウント付きだから軸が5mmグリッドにぴったり乗る。底面かうしろの面でとめてね。うらの軸受けピンで両持ちもできる。"
+  },
+  {
+    "id": "SV-MICROMG",
+    "category": "actuator",
+    "displayName": { "kids": "マイクロサーボ(金属ギア)", "adult": "マイクロサーボ金属ギア(MG90S相当・マウント付)" },
+    "refRealPart": "TowerPro MG90S + 樹脂マウント",
+    "massG": 13.4,
+    "powerCost": 1,
+    "servo": { "torqueKgCm": 2.2, "speedSecPer60Deg": 0.08, "rangeDeg": 90 },
+    "geoms": [
+      { "type": "box", "sizeMm": [23, 12, 22], "posMm": [-5, 0, 0], "color": "#6b5138" },
+      { "type": "box", "sizeMm": [32, 12, 2], "posMm": [-5, 0, 6], "color": "#6b5138" },
+      { "type": "cylinder", "radiusMm": 2.5, "heightMm": 2, "posMm": [0, 0, 11.5], "color": "#e8e4da" },
+      { "type": "box", "sizeMm": [40, 20, 3], "posMm": [0, 0, -12.5], "color": "#c8ccd4" },
+      { "type": "box", "sizeMm": [40, 3, 25], "posMm": [0, -8.5, -1.5], "color": "#c8ccd4" },
+      { "type": "cylinder", "radiusMm": 2.5, "heightMm": 2, "posMm": [0, 0, -15], "color": "#c8ccd4" }
+    ],
+    "hornGeoms": [
+      { "type": "cylinder", "radiusMm": 10, "heightMm": 2, "posMm": [0, 0, 13], "color": "#f2efe6" }
+    ],
+    "holes": [
+      { "originMm": [-15, 5, -12.5], "normal": [0, 0, -1], "uAxis": [1, 0, 0], "pitchMm": 10, "rows": 4, "cols": 2, "thicknessMm": 3 },
+      { "originMm": [-15, -8.5, -10], "normal": [0, -1, 0], "uAxis": [1, 0, 0], "pitchMm": 10, "rows": 4, "cols": 2, "thicknessMm": 3 },
+      { "originMm": [-5, 0, 13], "normal": [0, 0, 1], "uAxis": [1, 0, 0], "pitchMm": 10, "rows": 2, "cols": 1, "thicknessMm": 2, "body": "horn" },
+      { "originMm": [0, -5, 13], "normal": [0, 0, 1], "uAxis": [0, 1, 0], "pitchMm": 10, "rows": 2, "cols": 1, "thicknessMm": 2, "body": "horn" }
+    ],
+    "specialHoles": [
+      { "kind": "drive", "posMm": [0, 0, 13], "normal": [0, 0, 1], "thicknessMm": 2 },
+      { "kind": "idler", "posMm": [0, 0, -15], "normal": [0, 0, -1], "thicknessMm": 2 }
+    ],
+    "description": "マイクロサーボのちょっと強いやつ。ギアが金属でこわれにくい。マウント付き。"
+  },
+  {
+    "id": "SV-STD",
+    "category": "actuator",
+    "displayName": { "kids": "標準サーボ", "adult": "標準サーボ(MG996R相当・マウント付)" },
+    "refRealPart": "TowerPro MG996R + 樹脂マウント",
+    "massG": 55,
+    "powerCost": 3,
+    "servo": { "torqueKgCm": 9.4, "speedSecPer60Deg": 0.14, "rangeDeg": 90 },
+    "geoms": [
+      { "type": "box", "sizeMm": [40, 20, 37], "posMm": [-10, 0, 0], "color": "#333a44" },
+      { "type": "box", "sizeMm": [54, 20, 2], "posMm": [-10, 0, 8], "color": "#333a44" },
+      { "type": "cylinder", "radiusMm": 4, "heightMm": 2, "posMm": [0, 0, 19.5], "color": "#c9c4b8" },
+      { "type": "box", "sizeMm": [55, 30, 3], "posMm": [-7.5, 0, -20], "color": "#c8ccd4" },
+      { "type": "box", "sizeMm": [55, 3, 32], "posMm": [-7.5, -11.5, -4.5], "color": "#c8ccd4" },
+      { "type": "cylinder", "radiusMm": 3, "heightMm": 2, "posMm": [0, 0, -22.5], "color": "#c8ccd4" }
+    ],
+    "hornGeoms": [
+      { "type": "cylinder", "radiusMm": 12, "heightMm": 2, "posMm": [0, 0, 21.5], "color": "#f2efe6" }
+    ],
+    "holes": [
+      { "originMm": [-25, 10, -20], "normal": [0, 0, -1], "uAxis": [1, 0, 0], "pitchMm": 10, "rows": 5, "cols": 1, "thicknessMm": 3 },
+      { "originMm": [-25, -10, -20], "normal": [0, 0, -1], "uAxis": [1, 0, 0], "pitchMm": 10, "rows": 5, "cols": 1, "thicknessMm": 3 },
+      { "originMm": [-25, -11.5, -15], "normal": [0, -1, 0], "uAxis": [1, 0, 0], "pitchMm": 10, "rows": 5, "cols": 2, "thicknessMm": 3 },
+      { "originMm": [-5, 0, 21.5], "normal": [0, 0, 1], "uAxis": [1, 0, 0], "pitchMm": 10, "rows": 2, "cols": 1, "thicknessMm": 2, "body": "horn" },
+      { "originMm": [0, -5, 21.5], "normal": [0, 0, 1], "uAxis": [0, 1, 0], "pitchMm": 10, "rows": 2, "cols": 1, "thicknessMm": 2, "body": "horn" }
+    ],
+    "specialHoles": [
+      { "kind": "drive", "posMm": [0, 0, 21.5], "normal": [0, 0, 1], "thicknessMm": 2 },
+      { "kind": "idler", "posMm": [0, 0, -22.5], "normal": [0, 0, -1], "thicknessMm": 2 }
+    ],
+    "description": "中くらいの力持ち。うでや脚の関節に。マウント付きで軸がグリッドに乗る。うらの軸受けピンで両持ちできる。"
+  },
+  {
+    "id": "SV-HIGH",
+    "category": "actuator",
+    "displayName": { "kids": "ハイパワーサーボ", "adult": "ハイパワーサーボ(STS3215相当・7.4V・マウント付)" },
+    "refRealPart": "FEETECH STS3215 (7.4V) + 樹脂マウント",
+    "massG": 60,
+    "powerCost": 4,
+    "servo": { "torqueKgCm": 19, "speedSecPer60Deg": 0.15, "rangeDeg": 150 },
+    "geoms": [
+      { "type": "box", "sizeMm": [45, 24, 35], "posMm": [-10, 0, 0], "color": "#494f57" },
+      { "type": "box", "sizeMm": [58, 24, 2.5], "posMm": [-10, 0, 6], "color": "#494f57" },
+      { "type": "cylinder", "radiusMm": 4.5, "heightMm": 2, "posMm": [0, 0, 18.5], "color": "#c9c4b8" },
+      { "type": "box", "sizeMm": [60, 30, 3], "posMm": [-7.5, 0, -19], "color": "#c8ccd4" },
+      { "type": "box", "sizeMm": [60, 3, 30], "posMm": [-7.5, -13.5, -5.5], "color": "#c8ccd4" },
+      { "type": "cylinder", "radiusMm": 3, "heightMm": 2, "posMm": [0, 0, -21.5], "color": "#c8ccd4" }
+    ],
+    "hornGeoms": [
+      { "type": "cylinder", "radiusMm": 12, "heightMm": 2, "posMm": [0, 0, 20.5], "color": "#e8b23a" }
+    ],
+    "holes": [
+      { "originMm": [-25, 10, -19], "normal": [0, 0, -1], "uAxis": [1, 0, 0], "pitchMm": 10, "rows": 5, "cols": 1, "thicknessMm": 3 },
+      { "originMm": [-25, -10, -19], "normal": [0, 0, -1], "uAxis": [1, 0, 0], "pitchMm": 10, "rows": 5, "cols": 1, "thicknessMm": 3 },
+      { "originMm": [-25, -13.5, -15], "normal": [0, -1, 0], "uAxis": [1, 0, 0], "pitchMm": 10, "rows": 5, "cols": 2, "thicknessMm": 3 },
+      { "originMm": [-5, 0, 20.5], "normal": [0, 0, 1], "uAxis": [1, 0, 0], "pitchMm": 10, "rows": 2, "cols": 1, "thicknessMm": 2, "body": "horn" },
+      { "originMm": [0, -5, 20.5], "normal": [0, 0, 1], "uAxis": [0, 1, 0], "pitchMm": 10, "rows": 2, "cols": 1, "thicknessMm": 2, "body": "horn" }
+    ],
+    "specialHoles": [
+      { "kind": "drive", "posMm": [0, 0, 20.5], "normal": [0, 0, 1], "thicknessMm": 2 },
+      { "kind": "idler", "posMm": [0, 0, -21.5], "normal": [0, 0, -1], "thicknessMm": 2 }
+    ],
+    "description": "かなりの力持ち。重いうでも持ち上がる。そのぶん電気をたくさん使う。マウント付き。"
+  },
+  {
+    "id": "SV-HIGHPLUS",
+    "category": "actuator",
+    "displayName": { "kids": "ハイパワーサーボ(強)", "adult": "ハイパワーサーボ強(ST3215-HS相当・12V・マウント付)" },
+    "refRealPart": "FEETECH ST3215-HS (12V) + 樹脂マウント",
+    "massG": 65,
+    "powerCost": 6,
+    "servo": { "torqueKgCm": 30, "speedSecPer60Deg": 0.12, "rangeDeg": 150 },
+    "geoms": [
+      { "type": "box", "sizeMm": [45, 24, 35], "posMm": [-10, 0, 0], "color": "#7a2f35" },
+      { "type": "box", "sizeMm": [58, 24, 2.5], "posMm": [-10, 0, 6], "color": "#7a2f35" },
+      { "type": "cylinder", "radiusMm": 4.5, "heightMm": 2, "posMm": [0, 0, 18.5], "color": "#c9c4b8" },
+      { "type": "box", "sizeMm": [60, 30, 3], "posMm": [-7.5, 0, -19], "color": "#c8ccd4" },
+      { "type": "box", "sizeMm": [60, 3, 30], "posMm": [-7.5, -13.5, -5.5], "color": "#c8ccd4" },
+      { "type": "cylinder", "radiusMm": 3, "heightMm": 2, "posMm": [0, 0, -21.5], "color": "#c8ccd4" }
+    ],
+    "hornGeoms": [
+      { "type": "cylinder", "radiusMm": 12, "heightMm": 2, "posMm": [0, 0, 20.5], "color": "#e8b23a" }
+    ],
+    "holes": [
+      { "originMm": [-25, 10, -19], "normal": [0, 0, -1], "uAxis": [1, 0, 0], "pitchMm": 10, "rows": 5, "cols": 1, "thicknessMm": 3 },
+      { "originMm": [-25, -10, -19], "normal": [0, 0, -1], "uAxis": [1, 0, 0], "pitchMm": 10, "rows": 5, "cols": 1, "thicknessMm": 3 },
+      { "originMm": [-25, -13.5, -15], "normal": [0, -1, 0], "uAxis": [1, 0, 0], "pitchMm": 10, "rows": 5, "cols": 2, "thicknessMm": 3 },
+      { "originMm": [-5, 0, 20.5], "normal": [0, 0, 1], "uAxis": [1, 0, 0], "pitchMm": 10, "rows": 2, "cols": 1, "thicknessMm": 2, "body": "horn" },
+      { "originMm": [0, -5, 20.5], "normal": [0, 0, 1], "uAxis": [0, 1, 0], "pitchMm": 10, "rows": 2, "cols": 1, "thicknessMm": 2, "body": "horn" }
+    ],
+    "specialHoles": [
+      { "kind": "drive", "posMm": [0, 0, 20.5], "normal": [0, 0, 1], "thicknessMm": 2 },
+      { "kind": "idler", "posMm": [0, 0, -21.5], "normal": [0, 0, -1], "thicknessMm": 2 }
+    ],
+    "description": "最強クラスの力持ち。でも電気もいちばん食べる。パワーボックスに注意!マウント付き。"
+  },
+  {
+    "id": "SV-WHEEL",
+    "category": "actuator",
+    "displayName": { "kids": "車輪用サーボ(くるくる回る)", "adult": "連続回転サーボ(FS90R相当・マウント付)" },
+    "refRealPart": "FEETECH FS90R + 樹脂マウント",
+    "massG": 9,
+    "powerCost": 1,
+    "servo": { "torqueKgCm": 1.5, "speedSecPer60Deg": 0.1, "rangeDeg": 0, "continuous": true },
+    "geoms": [
+      { "type": "box", "sizeMm": [23, 12, 22], "posMm": [-5, 0, 0], "color": "#2f9e8f" },
+      { "type": "box", "sizeMm": [32, 12, 2], "posMm": [-5, 0, 6], "color": "#2f9e8f" },
+      { "type": "cylinder", "radiusMm": 2.5, "heightMm": 2, "posMm": [0, 0, 11.5], "color": "#e8e4da" },
+      { "type": "box", "sizeMm": [40, 20, 3], "posMm": [0, 0, -12.5], "color": "#c8ccd4" },
+      { "type": "box", "sizeMm": [40, 3, 25], "posMm": [0, -8.5, -1.5], "color": "#c8ccd4" },
+      { "type": "cylinder", "radiusMm": 2.5, "heightMm": 2, "posMm": [0, 0, -15], "color": "#c8ccd4" }
+    ],
+    "hornGeoms": [
+      { "type": "cylinder", "radiusMm": 10, "heightMm": 2, "posMm": [0, 0, 13], "color": "#f2efe6" }
+    ],
+    "holes": [
+      { "originMm": [-15, 5, -12.5], "normal": [0, 0, -1], "uAxis": [1, 0, 0], "pitchMm": 10, "rows": 4, "cols": 2, "thicknessMm": 3 },
+      { "originMm": [-15, -8.5, -10], "normal": [0, -1, 0], "uAxis": [1, 0, 0], "pitchMm": 10, "rows": 4, "cols": 2, "thicknessMm": 3 },
+      { "originMm": [-5, 0, 13], "normal": [0, 0, 1], "uAxis": [1, 0, 0], "pitchMm": 10, "rows": 2, "cols": 1, "thicknessMm": 2, "body": "horn" },
+      { "originMm": [0, -5, 13], "normal": [0, 0, 1], "uAxis": [0, 1, 0], "pitchMm": 10, "rows": 2, "cols": 1, "thicknessMm": 2, "body": "horn" }
+    ],
+    "specialHoles": [
+      { "kind": "drive", "posMm": [0, 0, 13], "normal": [0, 0, 1], "thicknessMm": 2 },
+      { "kind": "idler", "posMm": [0, 0, -15], "normal": [0, 0, -1], "thicknessMm": 2 }
+    ],
+    "description": "止まらずにくるくる回る、タイヤ専用のモーター。うしろの面でとめると軸が横向きになるよ。"
+  },
+  {
+    "id": "SN-IMU",
+    "category": "sensor",
+    "displayName": { "kids": "姿勢センサ", "adult": "姿勢センサ(MPU-6050相当)" },
+    "refRealPart": "MPU-6050 モジュール",
+    "massG": 5,
+    "powerCost": 1,
+    "sensorRole": "imu",
+    "geoms": [
+      { "type": "box", "sizeMm": [20, 15, 3], "posMm": [0, 0, 0], "color": "#7a4a9e" },
+      { "type": "box", "sizeMm": [5, 4, 2], "posMm": [0, 0, 2.5], "color": "#22262c" }
+    ],
+    "holes": [
+      { "originMm": [-7.5, 0, 0], "normal": [0, 0, -1], "uAxis": [1, 0, 0], "pitchMm": 15, "rows": 2, "cols": 1, "thicknessMm": 3 }
+    ],
+    "description": "ロボットのかたむきがわかる。シミュレータで姿勢メーターが出る。"
+  },
+  {
+    "id": "SN-DIST",
+    "category": "sensor",
+    "displayName": { "kids": "距離センサ", "adult": "距離センサ(HC-SR04相当)" },
+    "refRealPart": "HC-SR04",
+    "massG": 9,
+    "powerCost": 1,
+    "sensorRole": "distance",
+    "geoms": [
+      { "type": "box", "sizeMm": [45, 20, 2], "posMm": [0, 0, 0], "color": "#2c6ea8" },
+      { "type": "cylinder", "radiusMm": 8, "heightMm": 12, "posMm": [-11, 0, 7], "color": "#c9c4b8" },
+      { "type": "cylinder", "radiusMm": 8, "heightMm": 12, "posMm": [11, 0, 7], "color": "#c9c4b8" }
+    ],
+    "holes": [
+      { "originMm": [-20, -7.5, 0], "normal": [0, 0, -1], "uAxis": [1, 0, 0], "pitchMm": 40, "rows": 2, "cols": 1, "thicknessMm": 2 },
+      { "originMm": [-20, 7.5, 0], "normal": [0, 0, -1], "uAxis": [1, 0, 0], "pitchMm": 40, "rows": 2, "cols": 1, "thicknessMm": 2 }
+    ],
+    "description": "目玉みたいな見た目。前のものまでの距離がわかる。"
+  },
+  {
+    "id": "SN-CAM",
+    "category": "sensor",
+    "displayName": { "kids": "小型カメラ", "adult": "小型カメラ(OV2640相当)" },
+    "refRealPart": "OV2640 モジュール級",
+    "massG": 10,
+    "powerCost": 2,
+    "sensorRole": "camera",
+    "geoms": [
+      { "type": "box", "sizeMm": [25, 25, 10], "posMm": [0, 0, 0], "color": "#22262c" },
+      { "type": "cylinder", "radiusMm": 6, "heightMm": 5, "posMm": [0, 0, 7.5], "color": "#101216" }
+    ],
+    "holes": [
+      { "originMm": [-10, 10, 0], "normal": [0, 0, -1], "uAxis": [1, 0, 0], "pitchMm": 20, "rows": 2, "cols": 2, "thicknessMm": 10 }
+    ],
+    "description": "ロボットの目。シミュレータでロボット視点(FPV)が見られる。レンズは上向きに付くから、金具で向きを変えてね。"
+  },
+  {
+    "id": "FR-B030",
+    "category": "frame",
+    "displayName": { "kids": "ほね(短)", "adult": "ビーム 30mm" },
+    "refRealPart": "5mmピッチ汎用ビーム(タミヤ系互換)",
+    "materialOptions": ["plastic", "aluminum"],
+    "massG": { "plastic": 1, "aluminum": 2 },
+    "powerCost": 0,
+    "geoms": [{ "type": "box", "sizeMm": [30, 10, 3], "posMm": [0, 0, 0], "color": "#eee8dc" }],
+    "holes": [
+      { "originMm": [-12.5, 0, 0], "normal": [0, 0, -1], "uAxis": [1, 0, 0], "pitchMm": 5, "rows": 6, "cols": 1, "thicknessMm": 3 }
+    ]
+  },
+  {
+    "id": "FR-B045",
+    "category": "frame",
+    "displayName": { "kids": "ほね(短め)", "adult": "ビーム 45mm" },
+    "refRealPart": "5mmピッチ汎用ビーム(タミヤ系互換)",
+    "materialOptions": ["plastic", "aluminum"],
+    "massG": { "plastic": 2, "aluminum": 4 },
+    "powerCost": 0,
+    "geoms": [{ "type": "box", "sizeMm": [45, 10, 3], "posMm": [0, 0, 0], "color": "#eee8dc" }],
+    "holes": [
+      { "originMm": [-20, 0, 0], "normal": [0, 0, -1], "uAxis": [1, 0, 0], "pitchMm": 5, "rows": 9, "cols": 1, "thicknessMm": 3 }
+    ],
+    "description": "短と中のあいだ。脚の長さの微調整に。"
+  },
+  {
+    "id": "FR-B060",
+    "category": "frame",
+    "displayName": { "kids": "ほね(中)", "adult": "ビーム 60mm" },
+    "refRealPart": "5mmピッチ汎用ビーム(タミヤ系互換)",
+    "materialOptions": ["plastic", "aluminum"],
+    "massG": { "plastic": 2, "aluminum": 4 },
+    "powerCost": 0,
+    "geoms": [{ "type": "box", "sizeMm": [60, 10, 3], "posMm": [0, 0, 0], "color": "#eee8dc" }],
+    "holes": [
+      { "originMm": [-27.5, 0, 0], "normal": [0, 0, 1], "uAxis": [1, 0, 0], "pitchMm": 5, "rows": 12, "cols": 1, "thicknessMm": 3 }
+    ]
+  },
+  {
+    "id": "FR-B075",
+    "category": "frame",
+    "displayName": { "kids": "ほね(中長)", "adult": "ビーム 75mm" },
+    "refRealPart": "5mmピッチ汎用ビーム(タミヤ系互換)",
+    "materialOptions": ["plastic", "aluminum"],
+    "massG": { "plastic": 3, "aluminum": 6 },
+    "powerCost": 0,
+    "geoms": [{ "type": "box", "sizeMm": [75, 10, 3], "posMm": [0, 0, 0], "color": "#eee8dc" }],
+    "holes": [
+      { "originMm": [-35, 0, 0], "normal": [0, 0, -1], "uAxis": [1, 0, 0], "pitchMm": 5, "rows": 15, "cols": 1, "thicknessMm": 3 }
+    ],
+    "description": "中と長のあいだ。ちょうどいい長さがきっと見つかる。"
+  },
+  {
+    "id": "FR-B090",
+    "category": "frame",
+    "displayName": { "kids": "ほね(長)", "adult": "ビーム 90mm" },
+    "refRealPart": "5mmピッチ汎用ビーム(タミヤ系互換)",
+    "materialOptions": ["plastic", "aluminum"],
+    "massG": { "plastic": 3, "aluminum": 7 },
+    "powerCost": 0,
+    "geoms": [{ "type": "box", "sizeMm": [90, 10, 3], "posMm": [0, 0, 0], "color": "#eee8dc" }],
+    "holes": [
+      { "originMm": [-42.5, 0, 0], "normal": [0, 0, 1], "uAxis": [1, 0, 0], "pitchMm": 5, "rows": 18, "cols": 1, "thicknessMm": 3 }
+    ]
+  },
+  {
+    "id": "FR-B120",
+    "category": "frame",
+    "displayName": { "kids": "ほね(特長)", "adult": "ビーム 120mm" },
+    "refRealPart": "5mmピッチ汎用ビーム(タミヤ系互換)",
+    "materialOptions": ["plastic", "aluminum"],
+    "massG": { "plastic": 4, "aluminum": 9 },
+    "powerCost": 0,
+    "geoms": [{ "type": "box", "sizeMm": [120, 10, 3], "posMm": [0, 0, 0], "color": "#eee8dc" }],
+    "holes": [
+      { "originMm": [-57.5, 0, 0], "normal": [0, 0, 1], "uAxis": [1, 0, 0], "pitchMm": 5, "rows": 24, "cols": 1, "thicknessMm": 3 }
+    ]
+  },
+  {
+    "id": "FR-L030",
+    "category": "frame",
+    "displayName": { "kids": "まがりほね(L字)", "adult": "アングル 30×30mm" },
+    "refRealPart": "5mmピッチLアングル(タミヤ系互換)",
+    "materialOptions": ["plastic", "aluminum"],
+    "massG": { "plastic": 2, "aluminum": 4 },
+    "powerCost": 0,
+    "geoms": [
+      { "type": "box", "sizeMm": [30, 10, 3], "posMm": [0, 0, 0], "color": "#eee8dc" },
+      { "type": "box", "sizeMm": [3, 10, 30], "posMm": [16.5, 0, 13.5], "color": "#eee8dc" }
+    ],
+    "holes": [
+      { "originMm": [-12.5, 0, 0], "normal": [0, 0, -1], "uAxis": [1, 0, 0], "pitchMm": 5, "rows": 6, "cols": 1, "thicknessMm": 3 },
+      { "originMm": [16.5, 0, 3.5], "normal": [1, 0, 0], "uAxis": [0, 0, 1], "pitchMm": 5, "rows": 5, "cols": 1, "thicknessMm": 3 }
+    ],
+    "description": "向きを90°変えるほね。かべや柱を立てるときに。"
+  },
+  {
+    "id": "FR-T040",
+    "category": "frame",
+    "displayName": { "kids": "さんかくいた", "adult": "三角プレート 40mm" },
+    "refRealPart": "5mmピッチ三角プレート",
+    "materialOptions": ["plastic", "aluminum"],
+    "massG": { "plastic": 2, "aluminum": 4 },
+    "powerCost": 0,
+    "geoms": [{ "type": "triprism", "sideMm": 40, "thickMm": 3, "posMm": [-13, -13, 0], "color": "#eee8dc" }],
+    "holes": [
+      { "originMm": [-10.5, -10.5, 0], "normal": [0, 0, 1], "uAxis": [1, 0, 0], "pitchMm": 5, "rows": 7, "cols": 7, "thicknessMm": 3, "maskTriangle": true }
+    ],
+    "description": "てこの向きを変えたり、ななめに支えたり。からくりの主役。"
+  },
+  {
+    "id": "FR-P0306",
+    "category": "frame",
+    "displayName": { "kids": "いた(小)", "adult": "プレート 30×60mm" },
+    "refRealPart": "タミヤ ユニバーサルプレート系(5mmピッチ・3mm厚)",
+    "materialOptions": ["plastic", "aluminum"],
+    "massG": { "plastic": 5, "aluminum": 7 },
+    "powerCost": 0,
+    "geoms": [{ "type": "box", "sizeMm": [30, 60, 3], "posMm": [0, 0, 0], "color": "#eee8dc" }],
+    "holes": [
+      { "originMm": [-12.5, -27.5, 0], "normal": [0, 0, 1], "uAxis": [1, 0, 0], "pitchMm": 5, "rows": 6, "cols": 12, "thicknessMm": 3 }
+    ]
+  },
+  {
+    "id": "FR-P0606",
+    "category": "frame",
+    "displayName": { "kids": "いた(中)", "adult": "プレート 60×60mm" },
+    "refRealPart": "タミヤ ユニバーサルプレート系(5mmピッチ・3mm厚)",
+    "materialOptions": ["plastic", "aluminum"],
+    "massG": { "plastic": 9, "aluminum": 14 },
+    "powerCost": 0,
+    "geoms": [{ "type": "box", "sizeMm": [60, 60, 3], "posMm": [0, 0, 0], "color": "#eee8dc" }],
+    "holes": [
+      { "originMm": [-27.5, -27.5, 0], "normal": [0, 0, 1], "uAxis": [1, 0, 0], "pitchMm": 5, "rows": 12, "cols": 12, "thicknessMm": 3 }
+    ]
+  },
+  {
+    "id": "FR-P0612",
+    "category": "frame",
+    "displayName": { "kids": "いた(大)", "adult": "プレート 60×120mm" },
+    "refRealPart": "タミヤ ユニバーサルプレート系(5mmピッチ・3mm厚)",
+    "materialOptions": ["plastic", "aluminum"],
+    "massG": { "plastic": 19, "aluminum": 28 },
+    "powerCost": 0,
+    "geoms": [{ "type": "box", "sizeMm": [60, 120, 3], "posMm": [0, 0, 0], "color": "#eee8dc" }],
+    "holes": [
+      { "originMm": [-27.5, -57.5, 0], "normal": [0, 0, 1], "uAxis": [1, 0, 0], "pitchMm": 5, "rows": 12, "cols": 24, "thicknessMm": 3 }
+    ]
+  },
+  {
+    "id": "FR-P1216",
+    "category": "frame",
+    "displayName": { "kids": "いた(特大)", "adult": "プレート 120×160mm" },
+    "refRealPart": "タミヤ ユニバーサルプレート拡張サイズ相当",
+    "materialOptions": ["plastic", "aluminum"],
+    "massG": { "plastic": 50, "aluminum": 75 },
+    "powerCost": 0,
+    "geoms": [{ "type": "box", "sizeMm": [120, 160, 3], "posMm": [0, 0, 0], "color": "#eee8dc" }],
+    "holes": [
+      { "originMm": [-57.5, -77.5, 0], "normal": [0, 0, 1], "uAxis": [1, 0, 0], "pitchMm": 5, "rows": 24, "cols": 32, "thicknessMm": 3 }
+    ]
+  },
+  {
+    "id": "SP-05",
+    "category": "frame",
+    "displayName": { "kids": "げた(うすい)", "adult": "スペーサブロック 5mm" },
+    "refRealPart": "汎用スペーサ/スタンドオフ 5mm",
+    "materialOptions": ["plastic", "aluminum"],
+    "massG": { "plastic": 2, "aluminum": 4 },
+    "powerCost": 0,
+    "geoms": [{ "type": "box", "sizeMm": [20, 20, 5], "posMm": [0, 0, 0], "color": "#d8d2c4" }],
+    "holes": [
+      { "originMm": [-5, 5, 0], "normal": [0, 0, -1], "uAxis": [1, 0, 0], "pitchMm": 10, "rows": 2, "cols": 2, "thicknessMm": 5 }
+    ],
+    "description": "高さの微調整に。キャスターやセンサの下にはさんでね。"
+  },
+  {
+    "id": "SP-10",
+    "category": "frame",
+    "displayName": { "kids": "げた(ふつう)", "adult": "スペーサブロック 10mm" },
+    "refRealPart": "汎用スペーサ/スタンドオフ 10mm",
+    "materialOptions": ["plastic", "aluminum"],
+    "massG": { "plastic": 3, "aluminum": 8 },
+    "powerCost": 0,
+    "geoms": [{ "type": "box", "sizeMm": [20, 20, 10], "posMm": [0, 0, 0], "color": "#d8d2c4" }],
+    "holes": [
+      { "originMm": [-5, 5, 0], "normal": [0, 0, -1], "uAxis": [1, 0, 0], "pitchMm": 10, "rows": 2, "cols": 2, "thicknessMm": 10 }
+    ]
+  },
+  {
+    "id": "SP-15",
+    "category": "frame",
+    "displayName": { "kids": "げた(あつい)", "adult": "スペーサブロック 15mm" },
+    "refRealPart": "汎用スペーサ/スタンドオフ 15mm",
+    "materialOptions": ["plastic", "aluminum"],
+    "massG": { "plastic": 5, "aluminum": 11 },
+    "powerCost": 0,
+    "geoms": [{ "type": "box", "sizeMm": [20, 20, 15], "posMm": [0, 0, 0], "color": "#d8d2c4" }],
+    "holes": [
+      { "originMm": [-5, 5, 0], "normal": [0, 0, -1], "uAxis": [1, 0, 0], "pitchMm": 10, "rows": 2, "cols": 2, "thicknessMm": 15 }
+    ]
+  },
+  {
+    "id": "JT-BRumic",
+    "category": "bracket",
+    "displayName": { "kids": "りょうもち金具(小・コ字)", "adult": "ミニUブラケット(マイクロサーボ用)" },
+    "refRealPart": "SG90用Uブラケット相当",
+    "materialOptions": ["plastic", "aluminum"],
+    "massG": { "plastic": 2, "aluminum": 5 },
+    "powerCost": 0,
+    "geoms": [
+      { "type": "box", "sizeMm": [25, 12, 2.5], "posMm": [2.5, 0, 0], "color": "#c8ccd4" },
+      { "type": "box", "sizeMm": [25, 12, 2.5], "posMm": [2.5, 0, -32.5], "color": "#c8ccd4" },
+      { "type": "box", "sizeMm": [2.5, 12, 35], "posMm": [13.75, 0, -16.25], "color": "#c8ccd4" }
+    ],
+    "holes": [
+      { "originMm": [0, 0, 0], "normal": [0, 0, -1], "uAxis": [1, 0, 0], "pitchMm": 5, "rows": 1, "cols": 1, "thicknessMm": 2.5 },
+      { "originMm": [0, 0, -32.5], "normal": [0, 0, 1], "uAxis": [1, 0, 0], "pitchMm": 5, "rows": 1, "cols": 1, "thicknessMm": 2.5 },
+      { "originMm": [13.75, 0, -26.25], "normal": [1, 0, 0], "uAxis": [0, 0, 1], "pitchMm": 10, "rows": 3, "cols": 1, "thicknessMm": 2.5 }
+    ],
+    "description": "マイクロサーボの駆動穴と、うらの軸受けピンを上下からはさんで両持ちにするコ字金具。関節がじょうぶになる(反対側は📌ピンでとめてね)。"
+  },
+  {
+    "id": "JT-BRmic",
+    "category": "bracket",
+    "displayName": { "kids": "むきかえ金具(小)", "adult": "L字ブラケット(SG90用相当)" },
+    "refRealPart": "SG90用アルミブラケット",
+    "materialOptions": ["plastic", "aluminum"],
+    "massG": { "plastic": 2, "aluminum": 5 },
+    "powerCost": 0,
+    "geoms": [
+      { "type": "box", "sizeMm": [20, 12, 2], "posMm": [0, 0, 0], "color": "#c8ccd4" },
+      { "type": "box", "sizeMm": [2, 12, 20], "posMm": [11, 0, 9], "color": "#c8ccd4" }
+    ],
+    "holes": [
+      { "originMm": [-5, 0, 0], "normal": [0, 0, -1], "uAxis": [1, 0, 0], "pitchMm": 10, "rows": 2, "cols": 1, "thicknessMm": 2 },
+      { "originMm": [11, 0, 4], "normal": [1, 0, 0], "uAxis": [0, 0, 1], "pitchMm": 10, "rows": 2, "cols": 1, "thicknessMm": 2 }
+    ],
+    "description": "サーボやパーツの向きを90°変えるための金具。"
+  },
+  {
+    "id": "JT-BRstd",
+    "category": "bracket",
+    "displayName": { "kids": "むきかえ金具(中・U字)", "adult": "Uブラケット(MG996R用相当)" },
+    "refRealPart": "MG996R用マルチファンクションUブラケット",
+    "materialOptions": ["plastic", "aluminum"],
+    "massG": { "plastic": 6, "aluminum": 14 },
+    "powerCost": 0,
+    "geoms": [
+      { "type": "box", "sizeMm": [42.5, 20, 2.5], "posMm": [0, 0, 0], "color": "#c8ccd4" },
+      { "type": "box", "sizeMm": [2.5, 20, 30], "posMm": [-22.5, 0, 13.75], "color": "#c8ccd4" },
+      { "type": "box", "sizeMm": [2.5, 20, 30], "posMm": [22.5, 0, 13.75], "color": "#c8ccd4" }
+    ],
+    "holes": [
+      { "originMm": [-5, 5, 0], "normal": [0, 0, -1], "uAxis": [1, 0, 0], "pitchMm": 10, "rows": 2, "cols": 2, "thicknessMm": 2.5 },
+      { "originMm": [-22.5, 0, 8.75], "normal": [-1, 0, 0], "uAxis": [0, 0, 1], "pitchMm": 10, "rows": 2, "cols": 1, "thicknessMm": 2.5 },
+      { "originMm": [22.5, 0, 8.75], "normal": [1, 0, 0], "uAxis": [0, 0, 1], "pitchMm": 10, "rows": 2, "cols": 1, "thicknessMm": 2.5 }
+    ],
+    "description": "U字型の金具。サーボのホーンとおしり(アイドラー穴)を両側からはさんで、じょうぶな関節を作れる。"
+  },
+  {
+    "id": "JT-BRhigh",
+    "category": "bracket",
+    "displayName": { "kids": "むきかえ金具(大・U字)", "adult": "Uブラケット(STS3215用相当)" },
+    "refRealPart": "STS3215用ブラケット",
+    "materialOptions": ["plastic", "aluminum"],
+    "massG": { "plastic": 10, "aluminum": 25 },
+    "powerCost": 0,
+    "geoms": [
+      { "type": "box", "sizeMm": [53, 24, 3], "posMm": [0, 0, 0], "color": "#c8ccd4" },
+      { "type": "box", "sizeMm": [3, 24, 35], "posMm": [-28, 0, 16], "color": "#c8ccd4" },
+      { "type": "box", "sizeMm": [3, 24, 35], "posMm": [28, 0, 16], "color": "#c8ccd4" }
+    ],
+    "holes": [
+      { "originMm": [-5, 5, 0], "normal": [0, 0, -1], "uAxis": [1, 0, 0], "pitchMm": 10, "rows": 2, "cols": 2, "thicknessMm": 3 },
+      { "originMm": [-28, 0, 8.5], "normal": [-1, 0, 0], "uAxis": [0, 0, 1], "pitchMm": 10, "rows": 2, "cols": 1, "thicknessMm": 3 },
+      { "originMm": [28, 0, 8.5], "normal": [1, 0, 0], "uAxis": [0, 0, 1], "pitchMm": 10, "rows": 2, "cols": 1, "thicknessMm": 3 }
+    ],
+    "description": "ハイパワーサーボ用の大きなU字金具。"
+  },
+  {
+    "id": "WH-040",
+    "category": "wheel",
+    "displayName": { "kids": "タイヤ(小)", "adult": "ホイール Φ40×10mm" },
+    "refRealPart": "Φ40スポーツタイヤ級",
+    "massG": 8,
+    "powerCost": 0,
+    "contact": "wheel",
+    "geoms": [
+      { "type": "cylinder", "radiusMm": 20, "heightMm": 10, "posMm": [0, 0, 0], "color": "#2b2b31" },
+      { "type": "cylinder", "radiusMm": 12, "heightMm": 11, "posMm": [0, 0, 0], "color": "#e8e4da" }
+    ],
+    "holes": [
+      { "originMm": [0, 0, 0], "normal": [0, 0, 1], "uAxis": [1, 0, 0], "pitchMm": 5, "rows": 1, "cols": 1, "thicknessMm": 10 }
+    ],
+    "description": "車輪用サーボの回る穴(駆動穴)にはめてね。"
+  },
+  {
+    "id": "WH-065",
+    "category": "wheel",
+    "displayName": { "kids": "タイヤ(大)", "adult": "ホイール Φ65×25mm" },
+    "refRealPart": "Φ65ワイドタイヤ級",
+    "massG": 30,
+    "powerCost": 0,
+    "contact": "wheel",
+    "geoms": [
+      { "type": "cylinder", "radiusMm": 32.5, "heightMm": 25, "posMm": [0, 0, 0], "color": "#2b2b31" },
+      { "type": "cylinder", "radiusMm": 20, "heightMm": 26, "posMm": [0, 0, 0], "color": "#e8e4da" }
+    ],
+    "holes": [
+      { "originMm": [0, 0, 0], "normal": [0, 0, 1], "uAxis": [1, 0, 0], "pitchMm": 5, "rows": 1, "cols": 1, "thicknessMm": 25 }
+    ],
+    "description": "大きなタイヤ。段差に強いけど、ちょっと重い。"
+  },
+  {
+    "id": "WH-CAST",
+    "category": "wheel",
+    "displayName": { "kids": "ころキャスター", "adult": "ボールキャスター Φ15" },
+    "refRealPart": "タミヤ ボールキャスター級",
+    "massG": 10,
+    "powerCost": 0,
+    "contact": "caster",
+    "geoms": [
+      { "type": "box", "sizeMm": [20, 20, 3], "posMm": [0, 0, 0], "color": "#c8ccd4" },
+      { "type": "sphere", "radiusMm": 7.5, "posMm": [0, 0, -11], "color": "#8f949c" }
+    ],
+    "holes": [
+      { "originMm": [-5, -5, 0], "normal": [0, 0, 1], "uAxis": [1, 0, 0], "pitchMm": 10, "rows": 2, "cols": 2, "thicknessMm": 3 }
+    ],
+    "description": "ころころ転がる補助輪。いたのうらに付けてね。取付面から球の下まで20mm(タイヤと合わせやすい)。"
+  },
+  {
+    "id": "WH-FOOT",
+    "category": "wheel",
+    "displayName": { "kids": "あしうら", "adult": "フットパッド 30×40mm" },
+    "refRealPart": "ゴム足パッド",
+    "massG": 4,
+    "powerCost": 0,
+    "contact": "foot",
+    "geoms": [{ "type": "box", "sizeMm": [30, 40, 5], "posMm": [0, 0, 0], "color": "#3d4046" }],
+    "holes": [
+      { "originMm": [-12.5, -17.5, 0], "normal": [0, 0, 1], "uAxis": [1, 0, 0], "pitchMm": 5, "rows": 6, "cols": 8, "thicknessMm": 5 }
+    ],
+    "description": "歩くロボットの足の裏。すべりにくいゴム面。"
+  },
+  {
+    "id": "HD-GRIP",
+    "category": "hand",
+    "displayName": { "kids": "つかむ手", "adult": "グリッパー(1サーボ駆動)" },
+    "refRealPart": "SG90用グリッパーキット級",
+    "massG": 8,
+    "powerCost": 0,
+    "geoms": [
+      { "type": "box", "sizeMm": [24, 10, 4], "posMm": [0, 0, 0], "color": "#e8b23a" },
+      { "type": "box", "sizeMm": [4, 20, 10], "posMm": [-9, 12, 3], "color": "#e8b23a" },
+      { "type": "box", "sizeMm": [4, 20, 10], "posMm": [9, 12, 3], "color": "#e8b23a" }
+    ],
+    "holes": [
+      { "originMm": [0, 0, 0], "normal": [0, 0, -1], "uAxis": [1, 0, 0], "pitchMm": 5, "rows": 1, "cols": 1, "thicknessMm": 4 }
+    ],
+    "description": "マイクロサーボの駆動穴に付ける開閉爪。そのサーボが手の開け閉め係になる。"
+  },
+  {
+    "id": "HD-PLOW",
+    "category": "hand",
+    "displayName": { "kids": "おしブレード", "adult": "プッシュブレード" },
+    "refRealPart": "汎用プラ板ブレード",
+    "massG": 12,
+    "powerCost": 0,
+    "geoms": [{ "type": "box", "sizeMm": [60, 3, 40], "posMm": [0, 0, 0], "color": "#e8b23a" }],
+    "holes": [
+      { "originMm": [-12.5, 0, 15], "normal": [0, 1, 0], "uAxis": [1, 0, 0], "pitchMm": 5, "rows": 6, "cols": 7, "thicknessMm": 3 }
+    ],
+    "description": "押す・運ぶ用のブレード。動かないけど電気もいらない。"
+  },
+  {
+    "id": "WT-010",
+    "category": "weight",
+    "displayName": { "kids": "おもり(小)", "adult": "カウンターウェイト 10g" },
+    "refRealPart": "汎用ウェイト 10g",
+    "massG": 10,
+    "powerCost": 0,
+    "geoms": [{ "type": "box", "sizeMm": [15, 15, 6], "posMm": [0, 0, 0], "color": "#5a5f6b" }],
+    "holes": [
+      { "originMm": [-5, 0, 0], "normal": [0, 0, -1], "uAxis": [1, 0, 0], "pitchMm": 10, "rows": 2, "cols": 1, "thicknessMm": 6 }
+    ],
+    "description": "バランスを直す魔法の重り。前のめりなら、うしろに。"
+  },
+  {
+    "id": "WT-025",
+    "category": "weight",
+    "displayName": { "kids": "おもり(中)", "adult": "カウンターウェイト 25g" },
+    "refRealPart": "汎用ウェイト 25g",
+    "massG": 25,
+    "powerCost": 0,
+    "geoms": [{ "type": "box", "sizeMm": [20, 20, 8], "posMm": [0, 0, 0], "color": "#5a5f6b" }],
+    "holes": [
+      { "originMm": [-5, 5, 0], "normal": [0, 0, -1], "uAxis": [1, 0, 0], "pitchMm": 10, "rows": 2, "cols": 2, "thicknessMm": 8 }
+    ]
+  },
+  {
+    "id": "WT-050",
+    "category": "weight",
+    "displayName": { "kids": "おもり(大)", "adult": "カウンターウェイト 50g" },
+    "refRealPart": "汎用ウェイト 50g",
+    "massG": 50,
+    "powerCost": 0,
+    "geoms": [{ "type": "box", "sizeMm": [25, 25, 10], "posMm": [0, 0, 0], "color": "#5a5f6b" }],
+    "holes": [
+      { "originMm": [-5, 5, 0], "normal": [0, 0, -1], "uAxis": [1, 0, 0], "pitchMm": 10, "rows": 2, "cols": 2, "thicknessMm": 10 }
+    ]
+  },
+  {
+    "id": "DC-DOME",
+    "category": "decor",
+    "displayName": { "kids": "ドームあたま", "adult": "ドームキャップ" },
+    "massG": 3,
+    "powerCost": 0,
+    "geoms": [{ "type": "sphere", "radiusMm": 10, "posMm": [0, 0, 7], "color": "#ff5f5f" }],
+    "holes": [
+      { "originMm": [0, 0, 0], "normal": [0, 0, -1], "uAxis": [1, 0, 0], "pitchMm": 5, "rows": 1, "cols": 1, "thicknessMm": 4 }
+    ],
+    "description": "1穴だから、くるくる回るのも味。"
+  },
+  {
+    "id": "DC-ANT",
+    "category": "decor",
+    "displayName": { "kids": "アンテナ", "adult": "アンテナ" },
+    "massG": 1,
+    "powerCost": 0,
+    "geoms": [
+      { "type": "cylinder", "radiusMm": 1.5, "heightMm": 25, "posMm": [0, 0, 12.5], "color": "#8f949c" },
+      { "type": "sphere", "radiusMm": 3.5, "posMm": [0, 0, 26], "color": "#ff5f5f" }
+    ],
+    "holes": [
+      { "originMm": [0, 0, 0], "normal": [0, 0, -1], "uAxis": [1, 0, 0], "pitchMm": 5, "rows": 1, "cols": 1, "thicknessMm": 2 }
+    ],
+    "description": "ぶらぶらゆれるのはバグじゃなくて仕様。あいきょう。"
+  },
+  {
+    "id": "DC-EYE",
+    "category": "decor",
+    "displayName": { "kids": "めだまパネル", "adult": "アイパネル" },
+    "massG": 2,
+    "powerCost": 0,
+    "geoms": [
+      { "type": "box", "sizeMm": [30, 3, 16], "posMm": [0, 0, 10], "color": "#f2efe6" },
+      { "type": "cylinder", "radiusMm": 5, "heightMm": 2, "posMm": [-7, 2, 12], "axis": [0, 1, 0], "color": "#22262c" },
+      { "type": "cylinder", "radiusMm": 5, "heightMm": 2, "posMm": [7, 2, 12], "axis": [0, 1, 0], "color": "#22262c" }
+    ],
+    "holes": [
+      { "originMm": [0, 0, 0], "normal": [0, 0, -1], "uAxis": [1, 0, 0], "pitchMm": 5, "rows": 1, "cols": 1, "thicknessMm": 4 }
+    ],
+    "description": "顔ができると、きゅうに愛着がわく。1穴だから、くるくる回して好きな向きにできる。"
+  },
+  {
+    "id": "PB-S",
+    "category": "powerbox",
+    "displayName": { "kids": "パワーボックスS(マッチ箱)", "adult": "パワーボックスS(容量8)" },
+    "massG": 40,
+    "powerCost": 0,
+    "powerCapacity": 8,
+    "geoms": [
+      { "type": "box", "sizeMm": [50, 30, 20], "posMm": [0, 0, 0], "color": "#e8842a" },
+      { "type": "box", "sizeMm": [10, 6, 2], "posMm": [15, 0, 11], "color": "#2ec27e" }
+    ],
+    "holes": [
+      { "originMm": [-10, 5, 0], "normal": [0, 0, -1], "uAxis": [1, 0, 0], "pitchMm": 10, "rows": 3, "cols": 2, "thicknessMm": 20 },
+      { "originMm": [-10, -5, 0], "normal": [0, 0, 1], "uAxis": [1, 0, 0], "pitchMm": 10, "rows": 3, "cols": 2, "thicknessMm": 20 }
+    ],
+    "description": "電気とあたまが入った箱。マイクロサーボ数個ぶん(容量8)。上の面にも穴があるから、あたまや飾りをのせられる。"
+  },
+  {
+    "id": "PB-M",
+    "category": "powerbox",
+    "displayName": { "kids": "パワーボックスM(お弁当箱)", "adult": "パワーボックスM(容量24)" },
+    "massG": 250,
+    "powerCost": 0,
+    "powerCapacity": 24,
+    "geoms": [
+      { "type": "box", "sizeMm": [100, 70, 50], "posMm": [0, 0, 0], "color": "#e8842a" },
+      { "type": "box", "sizeMm": [16, 10, 2], "posMm": [30, 0, 26], "color": "#2ec27e" }
+    ],
+    "holes": [
+      { "originMm": [-20, 15, 0], "normal": [0, 0, -1], "uAxis": [1, 0, 0], "pitchMm": 10, "rows": 5, "cols": 4, "thicknessMm": 50 },
+      { "originMm": [-20, -15, 0], "normal": [0, 0, 1], "uAxis": [1, 0, 0], "pitchMm": 10, "rows": 5, "cols": 4, "thicknessMm": 50 }
+    ],
+    "description": "中型ロボ向けの箱(容量24)。250gあるから、置き場所がだいじ。"
+  },
+  {
+    "id": "PB-L",
+    "category": "powerbox",
+    "displayName": { "kids": "パワーボックスL(辞書)", "adult": "パワーボックスL(容量64)" },
+    "massG": 800,
+    "powerCost": 0,
+    "powerCapacity": 64,
+    "geoms": [
+      { "type": "box", "sizeMm": [160, 120, 80], "posMm": [0, 0, 0], "color": "#e8842a" },
+      { "type": "box", "sizeMm": [24, 14, 2], "posMm": [50, 0, 41], "color": "#2ec27e" }
+    ],
+    "holes": [
+      { "originMm": [-30, 25, 0], "normal": [0, 0, -1], "uAxis": [1, 0, 0], "pitchMm": 10, "rows": 7, "cols": 6, "thicknessMm": 80 },
+      { "originMm": [-30, -25, 0], "normal": [0, 0, 1], "uAxis": [1, 0, 0], "pitchMm": 10, "rows": 7, "cols": 6, "thicknessMm": 80 }
+    ],
+    "description": "ハイパワーサーボをたくさん積むならこれ(容量64)。800gの大物。"
+  }
+]
