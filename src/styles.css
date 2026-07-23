@@ -377,6 +377,26 @@ body,
   z-index: 10;
   max-width: 70%;
 }
+.snap-connect-cta {
+  appearance: none;
+  min-width: 132px;
+  padding: 9px 13px;
+  color: #1c1f26;
+  background: #f5c211;
+  border: 2px solid #fff2a8;
+  border-radius: 999px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+  font: inherit;
+  font-weight: bold;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.snap-connect-cta:hover,
+.snap-connect-cta:focus-visible {
+  background: #ffdc3e;
+  outline: 3px solid rgba(53, 197, 228, 0.8);
+  outline-offset: 2px;
+}
 .overlay {
   position: fixed;
   inset: 0;

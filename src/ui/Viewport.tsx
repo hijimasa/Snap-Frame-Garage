@@ -1,6 +1,6 @@
 // 3D組立ビュー:穴スナップ接続・自由配置(床タップ)・ゴーストプレビュー・
 // ドラッグ移動・ピン結合・重心表示・支持多角形・ポーズプレビュー
-import { Line, OrbitControls } from "@react-three/drei";
+import { Html, Line, OrbitControls } from "@react-three/drei";
 import { Canvas, type ThreeEvent } from "@react-three/fiber";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
@@ -39,6 +39,11 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 const snap5 = (v: number) => Math.round(v / 5) * 5;
+const HOLE_MARKER_LENGTH_MM = 8;
+
+/** 穴マーカーを中心面から部品の両表面まで届かせるための奥行き倍率。 */
+export const holeMarkerDepthScale = (thicknessMm: number) =>
+  (thicknessMm + 2) / HOLE_MARKER_LENGTH_MM;
 
 function TriGeometry({ side, thick }: { side: number; thick: number }) {
   const geo = useMemo(() => {
@@ -166,7 +171,11 @@ function HoleLayer({
     return holes.map((h) => {
       const base = h.body === "horn" && displayM.horn ? displayM.horn : displayM.main;
       const q = new Quaternion().setFromUnitVectors(new Vector3(0, 0, 1), h.normal);
-      const local = new Matrix4().compose(h.posMm.clone(), q, new Vector3(1, 1, 1));
+      const local = new Matrix4().compose(
+        h.posMm.clone(),
+        q,
+        new Vector3(1, 1, holeMarkerDepthScale(h.thicknessMm))
+      );
       // cylinderのY軸をZへ
       const rotX = new Matrix4().makeRotationX(Math.PI / 2);
       return base.clone().multiply(local).multiply(rotX);
@@ -381,6 +390,20 @@ export function Viewport() {
       pinHoles(linkFirstHole, { partId: h.partId, holeKey: h.hole.key }, coincident);
       setLinkFirstHole(null);
     }
+  };
+
+  const confirmPinOffer = () => {
+    if (!pinOffer) return;
+    pinHoles(
+      {
+        partId: pinOffer.staticHole.partId,
+        holeKey: pinOffer.staticHole.holeKey,
+        side: pinOffer.side,
+      },
+      { partId: pinOffer.dragHole.partId, holeKey: pinOffer.dragHole.holeKey },
+      true
+    );
+    setPinOffer(null);
   };
 
   // ゴーストプレビューの行列
@@ -659,7 +682,12 @@ export function Viewport() {
               .clone()
               .multiply(
                 new Matrix4().compose(
-                  hover.h.hole.posMm.clone(),
+                  hover.h.hole.posMm
+                    .clone()
+                    .addScaledVector(
+                      hover.h.hole.normal,
+                      hover.h.side * (hover.h.hole.thicknessMm / 2 + 0.8)
+                    ),
                   new Quaternion().setFromUnitVectors(new Vector3(0, 0, 1), hover.h.hole.normal),
                   new Vector3(1, 1, 1)
                 )
@@ -677,19 +705,13 @@ export function Viewport() {
         {pinOffer && (
           <group
             position={pinOffer.holeP}
-            quaternion={new Quaternion().setFromUnitVectors(new Vector3(0, 0, 1), pinOffer.n)}
+            quaternion={new Quaternion().setFromUnitVectors(
+              new Vector3(0, 0, 1),
+              pinOffer.n.clone().multiplyScalar(pinOffer.side)
+            )}
             onClick={(e) => {
               e.stopPropagation();
-              pinHoles(
-                {
-                  partId: pinOffer.staticHole.partId,
-                  holeKey: pinOffer.staticHole.holeKey,
-                  side: pinOffer.side,
-                },
-                { partId: pinOffer.dragHole.partId, holeKey: pinOffer.dragHole.holeKey },
-                true
-              );
-              setPinOffer(null);
+              confirmPinOffer();
             }}
             onPointerOver={() => (document.body.style.cursor = "pointer")}
             onPointerOut={() => (document.body.style.cursor = "")}
@@ -697,12 +719,34 @@ export function Viewport() {
             {/* 押しピン風:頭+軸 */}
             <mesh position={[0, 0, 9]}>
               <sphereGeometry args={[3.6, 14, 10]} />
-              <meshStandardMaterial color="#f5c211" emissive="#f5c211" emissiveIntensity={0.55} />
+              <meshStandardMaterial
+                color="#f5c211"
+                emissive="#f5c211"
+                emissiveIntensity={0.55}
+                depthTest={false}
+              />
             </mesh>
             <mesh position={[0, 0, 4]} rotation={[Math.PI / 2, 0, 0]}>
               <cylinderGeometry args={[1.1, 1.1, 10, 10]} />
-              <meshStandardMaterial color="#f5c211" emissive="#f5c211" emissiveIntensity={0.35} />
+              <meshStandardMaterial
+                color="#f5c211"
+                emissive="#f5c211"
+                emissiveIntensity={0.35}
+                depthTest={false}
+              />
             </mesh>
+            <Html position={[0, 0, 15]} center zIndexRange={[12, 1]}>
+              <button
+                type="button"
+                className="snap-connect-cta"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  confirmPinOffer();
+                }}
+              >
+                📌 ここをつなぐ
+              </button>
+            </Html>
           </group>
         )}
 
