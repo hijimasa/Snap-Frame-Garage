@@ -398,6 +398,10 @@ export function Viewport() {
         setLinkFirstHole(null);
         return;
       }
+      if (linkFirstHole.partId === h.partId) {
+        showToast("同じパーツの穴どうしはつなげないよ。別のパーツの穴を選んでね");
+        return;
+      }
       const thickOk = (firstHole.thicknessMm + h.hole.thicknessMm) / 2 + 1.5;
       if (a.p.distanceTo(b.p) > thickOk) {
         showToast("穴の中心が離れているよ。パーツをドラッグして、穴が光るまで近づけてね");

@@ -5,6 +5,7 @@ button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 summary:focus-visible,
+a:focus-visible,
 [tabindex]:focus-visible {
   outline: 3px solid #35c5e4;
   outline-offset: 2px;

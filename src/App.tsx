@@ -70,6 +70,7 @@ export default function App() {
         setHelpMenuOpen(false);
         setTabletDrawer(null);
         setTemplateOpen(false);
+        setTutorialOpen(false);
       } else if (e.key.toLowerCase() === "r" && useStore.getState().selection) {
         e.preventDefault();
         const id = useStore.getState().selection!;
