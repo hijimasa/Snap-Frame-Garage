@@ -39,6 +39,7 @@ interface AttachOpts {
   trySide?: boolean;
   tryFlip?: boolean;
   intent?: "decorative";
+  tint?: string;
 }
 
 class Tpl {
@@ -103,7 +104,12 @@ class Tpl {
     }
 
     const id = `p${this.seq++}`;
-    this.model.parts.push({ id, defId, material: opts.material ?? "plastic" });
+    this.model.parts.push({
+      id,
+      defId,
+      material: opts.material ?? "plastic",
+      tint: opts.tint,
+    });
     this.lastConnId = `c${this.seq}`;
     const conn: Connection = {
       id: `c${this.seq++}`,
@@ -413,7 +419,7 @@ function buildHexapod(): RobotModel {
 }
 
 // ---------------------------------------------------------------------------
-// テオヤンセン機構 8足(モータ2つ・クランクピン4つ・各ピンに前後鏡像の2脚)
+// テオヤンセン機構 4足(左右モータ各1つ・180°位相の前後脚)
 // リンク長はホーリーナンバーを5mmグリッドで再設計したもの。
 // 全回転ジャムなし・特異マージン7.7mm(原寸の6倍=ソルバが安定)・歩幅51mm・リフト13mm
 // を2D掃引の総当たり探索で確認済み:
@@ -477,6 +483,14 @@ function buildJansenLeg(
   my: 1 | -1, // +1=前向き脚 / -1=後向き(鏡像)脚
   sx: 1 | -1 // 体の左右(ほねの重ね方向にだけ使う)
 ): void {
+  const tint =
+    sx === 1
+      ? my === 1
+        ? "#4aa3df"
+        : "#f28e2b"
+      : my === 1
+        ? "#59a14f"
+        : "#e15759";
   const Qu: P2 = [my * (Qworld.y - axle.y), Qworld.z - axle.z];
   const n = jansenNodes(Qu);
   // u空間 → world(y,z)
@@ -503,6 +517,7 @@ function buildJansenLeg(
       side,
       orient: [{ axisLocal: [1, 0, 0], targetWorld: dir(from, to) }],
       angles: FINE_ANGLES,
+      tint,
     });
     vars.push(t.lastConnId);
     return id;
@@ -531,9 +546,10 @@ function buildJansenLeg(
 }
 
 function buildStrandbeest(): RobotModel {
-  const t = new Tpl("ヤンセンの8ほんあし");
+  const t = new Tpl("ヤンセンの4ほんあし");
   const body = t.free("FR-P0612", [0, 0, 1.5]);
-  const THETA0 = (90 * Math.PI) / 180; // restのクランク角(全4位相の特異マージンが最大の角)
+  // 対向する前後脚の足先が同じ高さになる位相。初期姿勢で4点接地する。
+  const THETA0 = 0;
 
   const servos: string[] = [];
   for (const sx of [1, -1] as const) {
@@ -570,16 +586,15 @@ function buildStrandbeest(): RobotModel {
     const Q1 = t.worldPoint(crank, [15, 0, 0]);
     const Q2 = t.worldPoint(crank, [-15, 0, 0]);
 
-    // クランクピン2つ × 前後鏡像 = 4脚/側
+    // 180°位相のクランクピン2つに、前脚・後脚を1本ずつ接続。
+    // 同じピンへ鏡像脚を重ねると4層のリンクが同一平面で交差して判別不能になるため、
+    // 1ピン1脚の実機に近い読みやすい構成にする(左右合計4脚)。
     const pins: { Q: Vector3; hole: HoleRef }[] = [
       { Q: Q1, hole: g(0, 10) }, // ローカル+15mm
       { Q: Q2, hole: g(0, 4) }, // ローカル-15mm
     ];
-    for (const { Q, hole } of pins) {
-      for (const my of [1, -1] as const) {
-        buildJansenLeg(t, sidePlate, crank, hole, axle, { y: Q.y, z: Q.z }, my, sx);
-      }
-    }
+    buildJansenLeg(t, sidePlate, crank, pins[0].hole, axle, { y: pins[0].Q.y, z: pins[0].Q.z }, 1, sx);
+    buildJansenLeg(t, sidePlate, crank, pins[1].hole, axle, { y: pins[1].Q.y, z: pins[1].Q.z }, -1, sx);
   }
 
   // パワーボックスS(コスト2)としょっかく
@@ -631,8 +646,8 @@ export const TEMPLATES: TemplateInfo[] = [
   {
     id: "strandbeest",
     emoji: "🦕",
-    name: "ヤンセンの8ほんあし",
-    desc: "テオヤンセン機構×4(前後鏡像ペア)をモータ2つで回す8足。からくりの最高峰!",
+    name: "ヤンセンの4ほんあし",
+    desc: "左右2組のテオヤンセン機構をモータ2つで回す4足。色ごとに1本の脚を追えるよ",
     build: buildStrandbeest,
   },
 ];

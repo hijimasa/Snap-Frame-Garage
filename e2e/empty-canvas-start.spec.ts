@@ -181,6 +181,28 @@ test.describe("空キャンバスの開始案内", () => {
     await expect(page.getByText(/固定されていない関節がある/)).toBeHidden();
   });
 
+  test("ヤンセン4足は重複のない色分けリンクで安定して立つ", async ({ page }) => {
+    await page.getByRole("button", { name: "ひながたから始める" }).click();
+    await page.locator(".template-card").filter({ hasText: "ヤンセンの4ほんあし" }).click();
+
+    const summary = await page.evaluate(() => {
+      const model = JSON.parse(localStorage.getItem("sfg-autosave")!).model;
+      return {
+        parts: model.parts.length,
+        connections: model.connections.length,
+        tints: [...new Set(model.parts.map((part: { tint?: string }) => part.tint).filter(Boolean))],
+      };
+    });
+    expect(summary).toEqual({
+      parts: 52,
+      connections: 71,
+      tints: ["#4aa3df", "#f28e2b", "#59a14f", "#e15759"],
+    });
+    await expect(page.locator(".statusbar .stat").filter({ hasText: "たおれない" })).toBeVisible();
+    await page.getByText("うごかしてみる", { exact: true }).click();
+    await expect(page.locator(".pose-row input[type=range]")).toHaveCount(2);
+  });
+
   test("タブレットでは左右パネルをドロワーとして切り替える", async ({ page }) => {
     await page.setViewportSize({ width: 1024, height: 768 });
     await page.reload();

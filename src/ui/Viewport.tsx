@@ -77,13 +77,15 @@ function GeomMesh({
   aluminum,
   selected,
   ghost,
+  tint,
 }: {
   geom: Geom;
   aluminum: boolean;
   selected: boolean;
   ghost?: boolean;
+  tint?: string;
 }) {
-  const color = aluminum ? "#b9bfc9" : geom.color ?? "#cccccc";
+  const color = aluminum ? "#b9bfc9" : tint ?? geom.color ?? "#cccccc";
   const mat = ghost ? (
     <meshStandardMaterial
       color={color}
@@ -652,7 +654,13 @@ export function Viewport() {
                 }}
               >
                 {def.geoms.map((g, i) => (
-                  <GeomMesh key={i} geom={g} aluminum={aluminum} selected={selected} />
+                  <GeomMesh
+                    key={i}
+                    geom={g}
+                    aluminum={aluminum}
+                    selected={selected}
+                    tint={inst.tint}
+                  />
                 ))}
               </group>
               {dm.horn && (

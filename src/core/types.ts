@@ -113,6 +113,8 @@ export interface PartInstance {
   id: string; // "p1", "p2", ...
   defId: string;
   material: Material;
+  /** 機構のリンク群を見分けるための任意表示色 */
+  tint?: string;
   /**
    * 島(どのtree接続の子でもないパーツ)の基準姿勢。
    * 自由配置(仮置き)を許すための土台。省略時は原点・無回転。
