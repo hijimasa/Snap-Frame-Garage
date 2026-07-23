@@ -14,7 +14,13 @@ import {
   Shape,
   Vector3,
 } from "three";
-import { buildAssembly, bodyDisplayMatrix, linkDeltas, type Assembly } from "../core/assembly";
+import {
+  buildAssembly,
+  bodyDisplayMatrix,
+  islandRootOf,
+  linkDeltas,
+  type Assembly,
+} from "../core/assembly";
 import {
   computeAttachment,
   defaultAttachHole,
@@ -391,25 +397,29 @@ export function Viewport() {
       if (!firstInst) return;
       const firstHole = holesOf(getDef(firstInst.defId)).find((x) => x.key === linkFirstHole.holeKey);
       if (!firstHole) return;
-      const a = holeWorldPos(asm, linkFirstHole.partId, firstHole);
-      const b = holeWorldPos(asm, h.partId, h.hole);
-      if (!a || !b) {
-        showToast("選んだ穴が見つからなくなったよ。最初の穴から選び直してね");
-        setLinkFirstHole(null);
-        return;
-      }
       if (linkFirstHole.partId === h.partId) {
         showToast("同じパーツの穴どうしはつなげないよ。別のパーツの穴を選んでね");
         return;
       }
-      const thickOk = (firstHole.thicknessMm + h.hole.thicknessMm) / 2 + 1.5;
-      if (a.p.distanceTo(b.p) > thickOk) {
-        showToast("穴の中心が離れているよ。パーツをドラッグして、穴が光るまで近づけてね");
-        return;
-      }
-      if (Math.abs(a.n.dot(b.n)) < 0.9) {
-        showToast("穴の向きが合っていないよ。パーツを90°回して、正面どうしに合わせてね");
-        return;
+      const sameIsland =
+        islandRootOf(model, linkFirstHole.partId) === islandRootOf(model, h.partId);
+      if (sameIsland) {
+        const a = holeWorldPos(asm, linkFirstHole.partId, firstHole);
+        const b = holeWorldPos(asm, h.partId, h.hole);
+        if (!a || !b) {
+          showToast("選んだ穴が見つからなくなったよ。最初の穴から選び直してね");
+          setLinkFirstHole(null);
+          return;
+        }
+        const thickOk = (firstHole.thicknessMm + h.hole.thicknessMm) / 2 + 1.5;
+        if (a.p.distanceTo(b.p) > thickOk) {
+          showToast("穴の中心が離れているよ。パーツをドラッグして、穴が光るまで近づけてね");
+          return;
+        }
+        if (Math.abs(a.n.dot(b.n)) < 0.9) {
+          showToast("穴の向きが合っていないよ。パーツを90°回して、正面どうしに合わせてね");
+          return;
+        }
       }
       const ok = pinHoles(linkFirstHole, { partId: h.partId, holeKey: h.hole.key }, true);
       if (ok) setLinkFirstHole(null);
