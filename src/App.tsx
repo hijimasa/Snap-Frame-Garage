@@ -3,6 +3,7 @@ import { getDef } from "./data/catalog";
 import { TEMPLATES } from "./data/templates";
 import { useStore } from "./state/store";
 import { CatalogPanel } from "./ui/CatalogPanel";
+import { EmptyCanvasStart } from "./ui/EmptyCanvasStart";
 import { ExportDialog } from "./ui/ExportDialog";
 import { Inspector } from "./ui/Inspector";
 import { Onboarding } from "./ui/Onboarding";
@@ -29,6 +30,7 @@ export default function App() {
   const setPendingDef = useStore((s) => s.setPendingDef);
   const linkMode = useStore((s) => s.linkMode);
   const setLinkMode = useStore((s) => s.setLinkMode);
+  const placeFreePart = useStore((s) => s.placeFreePart);
   const toast = useStore((s) => s.toast);
   const loadTemplate = useStore((s) => s.loadTemplate);
   const [templateOpen, setTemplateOpen] = useState(false);
@@ -142,6 +144,17 @@ export default function App() {
         </aside>
         <div className="center">
           <Viewport />
+          {model.parts.length === 0 &&
+            !onboardOpen &&
+            !templateOpen &&
+            !tutorialOpen &&
+            !pendingDefId &&
+            !linkMode && (
+              <EmptyCanvasStart
+                onPlaceBase={() => placeFreePart("FR-P0606", 0, 0, 0)}
+                onPickTemplate={() => setTemplateOpen(true)}
+              />
+            )}
           {pendingDefId && (
             <div className="mode-banner">
               「{adult ? getDef(pendingDefId).displayName.adult : getDef(pendingDefId).displayName.kids}

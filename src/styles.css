@@ -71,6 +71,54 @@ body,
   position: relative;
   min-width: 0;
 }
+.empty-start {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  pointer-events: none;
+}
+.empty-start-card {
+  width: min(440px, 100%);
+  padding: 24px;
+  text-align: center;
+  background: rgba(38, 43, 53, 0.95);
+  border: 1px solid #4a5266;
+  border-radius: 16px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.3);
+  pointer-events: auto;
+}
+.empty-start-icon {
+  font-size: 34px;
+  line-height: 1;
+}
+.empty-start h1 {
+  margin: 12px 0 8px;
+  font-size: 20px;
+  color: #fff;
+}
+.empty-start p {
+  margin: 0 0 18px;
+  color: #cdd3e0;
+  line-height: 1.6;
+}
+.empty-start-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.empty-start-actions .toolbtn.big {
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 15px;
+}
+.empty-start-hint {
+  margin-top: 14px;
+  color: #8a93a8;
+  font-size: 12px;
+}
 .panel-title {
   font-weight: bold;
   padding: 10px 12px 6px;
