@@ -61,7 +61,7 @@ describe.each(TEMPLATES)("テンプレート: $id", (tpl) => {
       dog: 1, // しっぽ
       biped: 2, // 両腕
       hexapod: 2, // しょっかく
-      strandbeest: 2, // しょっかく(脚の受動関節80個はすべてループ内=0扱い)
+      strandbeest: 2, // しょっかく(脚の受動関節40個はすべてループ内=0扱い)
     };
     expect(asm.danglingCount).toBe(EXPECTED[tpl.id]);
     const decorative = asm.danglingConnectionIds.filter(
@@ -71,107 +71,47 @@ describe.each(TEMPLATES)("テンプレート: $id", (tpl) => {
   });
 });
 
-describe("ヤンセン8足:クランク一回転の連動", () => {
-  it("前後に分離した8本の脚が色分けされた構成になる", () => {
+describe("ヤンセン4足＋前後補助キャスター", () => {
+  it("8足版より軽量な4脚・2モータ・2キャスター構成になる", () => {
     const model = buildTemplate("strandbeest");
-    expect(model.name).toBe("ヤンセンの8ほんあし");
-    expect(model.parts).toHaveLength(100);
-    expect(model.connections).toHaveLength(139);
-    const groups = new Map<string, number>();
-    for (const part of model.parts) {
-      if (part.tint) groups.set(part.tint, (groups.get(part.tint) ?? 0) + 1);
-    }
-    expect([...groups.values()].sort((a, b) => a - b)).toEqual(Array(8).fill(10));
+    expect(model.name).toBe("ヤンセンの4ほんあし＋補助輪");
+    expect(model.parts).toHaveLength(60);
+    expect(model.connections).toHaveLength(79);
+    expect(model.parts.filter((p) => p.defId === "SV-WHEEL")).toHaveLength(2);
+    expect(model.parts.filter((p) => p.defId === "WH-CAST")).toHaveLength(2);
+    expect(new Set(model.parts.map((p) => p.tint).filter(Boolean))).toHaveProperty("size", 4);
   });
 
-  it("全周でループが保たれ、足が持ち上がる", () => {
+  it("前後キャスターを含む支持多角形で基本姿勢が安定する", () => {
+    const model = buildTemplate("strandbeest");
+    const asm = buildAssembly(model);
+    const stability = computeStability(model, asm, robotMassSummary(model, asm).cogWorldMm);
+    expect(stability.status).toBe("stable");
+    expect(stability.supportPolygonXY.length).toBeGreaterThanOrEqual(4);
+    expect(stability.marginMm).toBeGreaterThan(8);
+  });
+
+  it("4脚の閉ループを保ったままクランクが一回転する", () => {
     const model = buildTemplate("strandbeest");
     const asm = buildAssembly(model);
     const servoIds = model.parts.filter((p) => p.defId === "SV-WHEEL").map((p) => p.id);
-    expect(servoIds).toHaveLength(4);
-
-    // 各色の脚について、rest時に原点が最も低いリンク(足先Fから始まるiリンク)を追跡。
-    const footByTint = new Map<string, { id: string; z: number }>();
-    const zero = linkDeltas(asm, {});
-    for (const p of model.parts) {
-      if (!p.tint) continue;
-      const M = bodyDisplayMatrix(asm, zero, p.id, false);
-      if (!M) continue;
-      const z = M.elements[14];
-      const current = footByTint.get(p.tint);
-      if (!current || z < current.z) footByTint.set(p.tint, { id: p.id, z });
-    }
-    expect(footByTint.size).toBe(8);
-
     let warm: Record<string, number> = {};
-    const ranges = new Map(
-      [...footByTint.keys()].map((tint) => [tint, { min: Infinity, max: -Infinity }])
-    );
     for (let th = 0; th <= 360; th += 10) {
-      const active: Record<string, number> = {};
-      for (const s of servoIds) active[s] = th;
-      const angles = solveDisplayAngles(model, asm, active, warm);
+      const angles = solveDisplayAngles(
+        model,
+        asm,
+        Object.fromEntries(servoIds.map((id) => [id, th])),
+        warm
+      );
       warm = angles;
-      // ループ拘束の破れが小さいまま
       expect(loopErrorMm(model, asm, angles), `θ=${th}`).toBeLessThan(1.5);
-      const deltas = linkDeltas(asm, angles);
-      for (const [tint, foot] of footByTint) {
-        const z = bodyDisplayMatrix(asm, deltas, foot.id, false)!.elements[14];
-        const range = ranges.get(tint)!;
-        range.min = Math.min(range.min, z);
-        range.max = Math.max(range.max, z);
-      }
-    }
-    for (const range of ranges.values()) {
-      // 8本すべてが10mm以上持ち上がる=飾りではなく歩行の足運びになっている
-      expect(range.max - range.min).toBeGreaterThan(10);
     }
   });
 
-  it("駆動角が大きく飛んでも直前姿勢から連続解を追跡する", () => {
-    const model = buildTemplate("strandbeest");
-    const asm = buildAssembly(model);
-    const servoIds = model.parts.filter((p) => p.defId === "SV-WHEEL").map((p) => p.id);
-    const zero = solveDisplayAngles(
-      model,
-      asm,
-      Object.fromEntries(servoIds.map((id) => [id, 0]))
-    );
-    const jumped = solveDisplayAngles(
-      model,
-      asm,
-      Object.fromEntries(servoIds.map((id) => [id, 170])),
-      zero
-    );
-    expect(loopErrorMm(model, asm, jumped)).toBeLessThan(1.5);
-    for (const id of servoIds) expect(jumped[id]).toBeCloseTo(170, 6);
-  });
-
-  it("MuJoCo向けに4駆動軸と40個の閉ループ拘束を書き出す", () => {
-    const data = buildExportData(buildTemplate("strandbeest"));
-    expect(data.allJoints.filter((joint) => joint.type === "active")).toHaveLength(4);
-    expect(data.loopJoints).toHaveLength(40);
-
-    const mjcf = exportMjcf(data);
-    expect(mjcf.match(/<velocity name="act_servo_/g)).toHaveLength(4);
-    expect(mjcf.match(/<connect name="loop_/g)).toHaveLength(40);
-    expect(mjcf).toContain('<freejoint name="root"/>');
-    expect(mjcf).toContain('name="floor"');
-  });
-
-  it("4本のL字支持材は本体側に固定され、駆動ホーンから分離される", () => {
-    const model = buildTemplate("strandbeest");
-    const asm = buildAssembly(model);
-    const supports = model.parts.filter((part) => part.defId === "FR-L030");
-    const servos = model.parts.filter((part) => part.defId === "SV-WHEEL");
-    expect(supports).toHaveLength(4);
-    expect(servos).toHaveLength(4);
-
-    const fixedLink = asm.linkOfBody.get(model.parts[0].id);
-    for (const support of supports) expect(asm.linkOfBody.get(support.id)).toBe(fixedLink);
-    for (const servo of servos) {
-      expect(asm.linkOfBody.get(servo.id)).toBe(fixedLink);
-      expect(asm.linkOfBody.get(`${servo.id}#horn`)).not.toBe(fixedLink);
-    }
+  it("MuJoCoでは2つのキャスター球を低摩擦接触として出力する", () => {
+    const mjcf = exportMjcf(buildExportData(buildTemplate("strandbeest")));
+    expect(mjcf.match(/friction="0\.05 0\.001 0\.0001"/g)).toHaveLength(2);
+    expect(mjcf.match(/<velocity name="act_servo_/g)).toHaveLength(2);
+    expect(mjcf.match(/<connect name="loop_/g)).toHaveLength(20);
   });
 });

@@ -578,17 +578,40 @@ function buildJansenLeg(
   if (err > 0.5) throw new Error(`jansen leg settle failed: ${err.toFixed(2)}mm`);
 }
 
+/** 本体前後から垂直材を下ろし、脚より少し高い位置に補助キャスターを置く。 */
+function buildJansenAssistCaster(t: Tpl, body: string, bodyCol: number, forward: 1 | -1): void {
+  const top = t.attach(body, gi("FR-P0612", 0, 5, bodyCol), "FR-L030", g(0, 0), {
+    orient: [
+      { axisLocal: [1, 0, 0], targetWorld: [0, forward, 0], weight: 2 },
+      { axisLocal: [0, 1, 0], targetWorld: [1, 0, 0] },
+    ],
+  });
+  const drop = t.attach(top, g(1, 4), "FR-B090", g(0, 0), {
+    orient: [{ axisLocal: [1, 0, 0], targetWorld: DOWN, weight: 2 }],
+    angles: [0, 90, 180, 270],
+    trySide: true,
+  });
+  // 端から2穴内側(75mm落差)を使い、球底を脚の最下点と約1mm以内にそろえる。
+  const bottom = t.attach(drop, g(0, 15), "FR-L030", g(1, 4), {
+    orient: [
+      { axisLocal: [0, 0, -1], targetWorld: DOWN, weight: 2 },
+      { axisLocal: [1, 0, 0], targetWorld: [0, forward, 0] },
+    ],
+    angles: [0, 90, 180, 270],
+    trySide: true,
+  });
+  t.attach(bottom, g(0, 2), "WH-CAST", g(0, 0), {
+    orient: [{ axisLocal: [0, 0, -1], targetWorld: DOWN, weight: 2 }],
+    trySide: true,
+  });
+}
+
 function buildStrandbeest(): RobotModel {
-  const t = new Tpl("ヤンセンの8ほんあし");
+  const t = new Tpl("ヤンセンの4ほんあし＋補助輪");
   const body = t.free("FR-P0612", [0, 0, 1.5]);
-  // 前後モジュールを80mm離し、後側を90°進める。各モジュール内の2脚は
-  // ダブルクランクで180°差になるため、全体では0/90/180/270°の4位相を
-  // 左右一対ずつ持つ。シミュレータでも一度に脚が抜けにくい構成。
-  const modules = [
-    { bodyCol: 3, theta: 0 },
-    { bodyCol: 19, theta: 90 },
-  ] as const;
-  const legColors = ["#4aa3df", "#f28e2b", "#59a14f", "#e15759", "#76b7b2", "#edc949", "#af7aa1", "#ff9da7"];
+  // 左右のダブルクランクに180°差の前後脚を1本ずつ取り付ける。
+  const modules = [{ bodyCol: 11, theta: 0 }];
+  const legColors = ["#4aa3df", "#f28e2b", "#59a14f", "#e15759"];
   const servos: string[] = [];
   for (const [moduleIndex, module] of modules.entries()) {
     for (const sx of [1, -1] as const) {
@@ -655,11 +678,13 @@ function buildStrandbeest(): RobotModel {
     }
   }
 
+  buildJansenAssistCaster(t, body, 1, -1);
+  buildJansenAssistCaster(t, body, 22, 1);
+
   // パワーボックスS(コスト2)としょっかく
   t.attach(body, gi("FR-P0612", 0, 5, 11), "PB-S", g(0, 2), {});
   t.attach(body, gi("FR-P0612", 0, 3, 22), "DC-ANT", g(0, 0), { pins: 1, intent: "decorative" });
   t.attach(body, gi("FR-P0612", 0, 8, 22), "DC-ANT", g(0, 0), { pins: 1, intent: "decorative" });
-  // 同じ側の前後モータを同じスティックへ割り当てる。
   servos.forEach((servo, i) => t.map(servo, i % 2 === 0 ? "rightStickY" : "leftStickY"));
   return t.done();
 }
@@ -704,8 +729,8 @@ export const TEMPLATES: TemplateInfo[] = [
   {
     id: "strandbeest",
     emoji: "🦕",
-    name: "ヤンセンの8ほんあし",
-    desc: "前後を分けた4モータ・8足。4位相で接地が途切れにくく、色ごとに1本の脚を追えるよ",
+    name: "ヤンセンの4ほんあし＋補助輪",
+    desc: "おすすめ軽量版。2モータ・4足を前後キャスターで支え、組みやすさと安定性を両立",
     build: buildStrandbeest,
   },
 ];

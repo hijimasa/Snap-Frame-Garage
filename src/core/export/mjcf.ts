@@ -107,6 +107,9 @@ export function exportMjcf(data: ExportData): string {
       let friction = "";
       if (def?.contact === "foot") friction = ` friction="1.6 0.01 0.0001"`;
       else if (def?.contact === "wheel") friction = ` friction="1.3 0.005 0.0001"`;
+      // 球は現状独立剛体ではないため、低摩擦の全方向スライドでボール回転を近似する。
+      else if (def?.contact === "caster" && eg.geom.type === "sphere")
+        friction = ` friction="0.05 0.001 0.0001"`;
       out.push(
         `${ind}  <geom name="${link.name}_g${gi}" ${geomAttrs(eg.geom)} pos="${v3str(p, MM)}" quat="${quatStr(eg.quat)}" rgba="${rgba(eg.color)}" mass="0"${friction}/>`
       );

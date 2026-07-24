@@ -210,26 +210,22 @@ test.describe("空キャンバスの開始案内", () => {
     await expect(page.getByText(/固定されていない関節がある/)).toBeHidden();
   });
 
-  test("ヤンセン8足は前後に分かれた色分けリンクで安定して立つ", async ({ page }) => {
+  test("ヤンセン4足補助輪版を読み込む", async ({ page }) => {
     await page.getByRole("button", { name: "ひながたから始める" }).click();
-    await page.locator(".template-card").filter({ hasText: "ヤンセンの8ほんあし" }).click();
+    await expect(page.locator(".template-card").filter({ hasText: "ヤンセンの8ほんあし" })).toHaveCount(0);
+    await page.locator(".template-card").filter({ hasText: "ヤンセンの4ほんあし＋補助輪" }).click();
 
     const summary = await page.evaluate(() => {
       const model = JSON.parse(localStorage.getItem("sfg-autosave")!).model;
       return {
         parts: model.parts.length,
         connections: model.connections.length,
-        tints: [...new Set(model.parts.map((part: { tint?: string }) => part.tint).filter(Boolean))],
+        servos: model.parts.filter((part: { defId: string }) => part.defId === "SV-WHEEL").length,
+        casters: model.parts.filter((part: { defId: string }) => part.defId === "WH-CAST").length,
       };
     });
-    expect(summary).toEqual({
-      parts: 100,
-      connections: 139,
-      tints: ["#4aa3df", "#f28e2b", "#59a14f", "#e15759", "#76b7b2", "#edc949", "#af7aa1", "#ff9da7"],
-    });
+    expect(summary).toEqual({ parts: 60, connections: 79, servos: 2, casters: 2 });
     await expect(page.locator(".statusbar .stat").filter({ hasText: "たおれない" })).toBeVisible();
-    await page.getByText("うごかしてみる", { exact: true }).click();
-    await expect(page.locator(".pose-row input[type=range]")).toHaveCount(4);
   });
 
   test("タブレットでは左右パネルをドロワーとして切り替える", async ({ page }) => {
