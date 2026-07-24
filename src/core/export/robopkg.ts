@@ -1,4 +1,5 @@
-// ロボットパッケージ(.robopkg = zip)書き出し(企画書§5.3)と、プロジェクト保存/読込。
+// ロボットパッケージ(*.robopkg.zip = 素のzip)書き出し(企画書§5.3)と、プロジェクト保存/読込。
+// 拡張子を.zipのままにすることで、他のシミュレータやROSツールでもそのまま解凍して使える。
 import JSZip from "jszip";
 import { Quaternion, Vector3 } from "three";
 import { getDef } from "../../data/catalog";
@@ -110,7 +111,7 @@ export async function buildRobopkg(
   }
   const blob = await zip.generateAsync({ type: "blob" });
   const safe = (model.name || "mybot").replace(/[\\/:*?"<>|]/g, "_");
-  return { blob, fileName: `${safe}.robopkg`, urdf, mjcf, manifest, warnings: data.warnings };
+  return { blob, fileName: `${safe}.robopkg.zip`, urdf, mjcf, manifest, warnings: data.warnings };
 }
 
 // ---- プロジェクト保存/読込(ローカルファースト) ----

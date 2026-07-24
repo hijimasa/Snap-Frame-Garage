@@ -23,7 +23,7 @@ describe.skipIf(!outDir)("export templates to .robopkg", () => {
     zip.file("manifest.json", JSON.stringify(buildManifest(data), null, 2));
     const buf = await zip.generateAsync({ type: "nodebuffer" });
     mkdirSync(outDir!, { recursive: true });
-    writeFileSync(join(outDir!, `${tpl.id}.robopkg`), buf);
+    writeFileSync(join(outDir!, `${tpl.id}.robopkg.zip`), buf);
     expect(buf.length).toBeGreaterThan(0);
   });
 });

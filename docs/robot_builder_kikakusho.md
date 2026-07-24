@@ -226,10 +226,10 @@
 
 ### 5.3 ロボットパッケージ(シミュレータへの受け渡し形式)
 
-書き出しは単一のzip「ロボットパッケージ(.robopkg)」とする。
+書き出しは単一のzip「ロボットパッケージ(`*.robopkg.zip`)」とする。拡張子を`.zip`のままにすることで、本企画のアプリ群を介さずとも解凍するだけで中のURDF/MJCFを他のシミュレータやROSツールで利用できる(独自拡張子で囲い込まない)。
 
 ```
-mybot.robopkg(実体はzip)
+mybot.robopkg.zip(素のzip)
 ├── robot.urdf          … URDF形式
 ├── robot.mjcf.xml      … MJCF形式
 ├── meshes/             … 表示用・衝突用メッシュ
