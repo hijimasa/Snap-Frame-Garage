@@ -526,6 +526,7 @@ function buildJansenLeg(
   Qworld: { y: number; z: number },
   my: 1 | -1, // +1=前向き脚 / -1=後向き(鏡像)脚
   sx: 1 | -1, // 体の左右(ほねの重ね方向にだけ使う)
+  rodSide: 1 | -1, // クランクピンに付くj・kほねの重ね面(前後脚でピンの両面に振り分ける)
   tint: string
 ): void {
   const Qu: P2 = [my * (Qworld.y - axle.y), Qworld.z - axle.z];
@@ -573,9 +574,9 @@ function buildJansenLeg(
   });
   vars.push(t.lastConnId);
 
-  const bJ = bar(crank, crankHole, "FR-B060", n.Q, n.B1, -sx as 1 | -1); // j=55
+  const bJ = bar(crank, crankHole, "FR-B060", n.Q, n.B1, rodSide); // j=55
   const bC = bar(sidePlate, Phole, "FR-B045", n.P, n.C1, sx); // c=40
-  const bK = bar(crank, crankHole, "FR-B075", n.Q, n.C1, -sx as 1 | -1); // k=60
+  const bK = bar(crank, crankHole, "FR-B075", n.Q, n.C1, rodSide); // k=60
 
   // 剛体三角F(C1-C2-F):cほねの先端C1に1ピン
   const triF = t.attach(bC, g(0, 8), "FR-JTF", g(0, 0), {
@@ -614,8 +615,8 @@ function buildJansenAssistCaster(t: Tpl, body: string, bodyCol: number, forward:
     angles: [0, 90, 180, 270],
     trySide: true,
   });
-  // 落差70mm=球底を脚の接地アークより約5mm高くする。ここを下げすぎると
-  // キャスターが体重を受けてしまい、足が空滑りして歩けない(シミュレーション実測)。
+  // 落差70mm=球底を脚の接地面より約5mm上。下げすぎるとキャスターが体重を受けて
+  // 足が空滑りし、上げすぎると転倒する(シミュレーション実測)。
   const bottom = t.attach(drop, g(0, 14), "FR-L030", g(1, 4), {
     orient: [
       { axisLocal: [0, 0, -1], targetWorld: DOWN, weight: 2 },
@@ -633,8 +634,10 @@ function buildJansenAssistCaster(t: Tpl, body: string, bodyCol: number, forward:
 function buildStrandbeest(): RobotModel {
   const t = new Tpl("ヤンセンの4ほんあし＋補助輪");
   const body = t.free("FR-P0612", [0, 0, 1.5]);
-  // 左右のダブルクランクに180°差の前後脚を1本ずつ取り付ける。
-  const modules = [{ bodyCol: 11, theta: 0 }];
+  // 原作と同じく、片持ちクランクの1本のピンに前向き脚と後向き(鏡像)脚のペアを付ける。
+  // 初期クランク角330°:接地帯(実測224°〜320°)の端で、基本姿勢は4本の足がほぼ同高で接地。
+  // 左右は鏡映対(θL=180°−θR)の位相になり、前進の直進性と旋回の効きのバランスが掃引実測で最良。
+  const modules = [{ bodyCol: 11, theta: 330 }];
   const legColors = ["#4aa3df", "#f28e2b", "#59a14f", "#e15759"];
   const servos: string[] = [];
   for (const [moduleIndex, module] of modules.entries()) {
@@ -670,34 +673,41 @@ function buildStrandbeest(): RobotModel {
           trySide: true,
         }
       );
-      const servo = t.attach(sidePlate, gi("FR-P0612", 0, 2, 11), "SV-WHEEL", sx === 1 ? g(0, 0) : g(0, 1), {
+      // サーボは機体プレートのふちに背面マウントで寝かせ、シャフト(クランク軸)を外向きに
+      // (にりんしゃと同じ載せ方)。駆動面が側板とほぼ同一平面に来るので、脚リンク全体が
+      // 1枚の面に収まって構造が読み取りやすい(側板への底面マウントだと本体厚ぶん
+      // クランクが27mm外に浮いてしまい、リンクが2層に分離して見えていた)
+      const servo = t.attach(body, gi("FR-P0612", 0, sx === 1 ? 11 : 0, 13), "SV-WHEEL", sx === 1 ? g(1, 2) : g(1, 4), {
+        side: 1, // プレート上面に載せる(軸高さ13mm=側板グリッドとP穴が合う高さ)
         orient: [
           { axisLocal: [0, 0, 1], targetWorld: [sx, 0, 0], weight: 2 },
-          { axisLocal: [1, 0, 0], targetWorld: [0, 1, 0] },
+          { axisLocal: [-1, 0, 0], targetWorld: [0, 1, 0] },
         ],
-        trySide: true,
       });
       servos.push(servo);
       const drivePoint = t.worldPoint(servo, [0, 0, 13]);
       const axle = { y: drivePoint.y, z: drivePoint.z };
-      const thetaRad = (module.theta * Math.PI) / 180;
-      const crank = t.attach(servo, { special: "drive" }, "FR-B075", g(0, 7), {
+      // 左右で鏡映対になる初期角(180°−θ)を使うと、位相90°差の歩容になり
+      // 「全足が同時に浮いてキャスターに落ちる」瞬間がなくなる
+      const theta = sx === 1 ? module.theta : 180 - module.theta;
+      const thetaRad = (theta * Math.PI) / 180;
+      // クランクは原作と同じ片持ちの1本腕(軸から15mm)。前後1対の脚を同じピンで駆動する
+      const crank = t.attach(servo, { special: "drive" }, "FR-B030", g(0, 0), {
         pins: 2,
         orient: [{ axisLocal: [1, 0, 0], targetWorld: [0, Math.cos(thetaRad), Math.sin(thetaRad)] }],
         angles: FINE_ANGLES,
       });
-      const pins: { Q: Vector3; hole: HoleRef }[] = [
-        { Q: t.worldPoint(crank, [15, 0, 0]), hole: g(0, 10) },
-        { Q: t.worldPoint(crank, [-15, 0, 0]), hole: g(0, 4) },
-      ];
+      const pinHole: HoleRef = g(0, 3); // 軸から15mm
+      const Q = t.worldPoint(crank, [2.5, 0, 0]);
       const colorBase = moduleIndex * 4 + (sx === 1 ? 0 : 2);
+      // 前向き脚と後向き(鏡像)脚をピンの両面に振り分ける(原作の脚ペアと同じ構成)
       buildJansenLeg(
-        t, sidePlate, crank, pins[0].hole, axle, { y: pins[0].Q.y, z: pins[0].Q.z },
-        1, sx, legColors[colorBase]
+        t, sidePlate, crank, pinHole, axle, { y: Q.y, z: Q.z },
+        1, sx, sx, legColors[colorBase]
       );
       buildJansenLeg(
-        t, sidePlate, crank, pins[1].hole, axle, { y: pins[1].Q.y, z: pins[1].Q.z },
-        -1, sx, legColors[colorBase + 1]
+        t, sidePlate, crank, pinHole, axle, { y: Q.y, z: Q.z },
+        -1, sx, -sx as 1 | -1, legColors[colorBase + 1]
       );
     }
   }

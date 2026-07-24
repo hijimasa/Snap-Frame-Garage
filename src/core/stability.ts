@@ -74,8 +74,32 @@ export function partWorldBBoxCorners(model: RobotModel, asm: Assembly, partId: s
   if (!inst || !M) return [];
   const def = getDef(inst.defId);
   const out: Vector3[] = [];
-  for (const g of [...def.geoms, ...(def.hornGeoms ?? [])])
+  const pushAligned = (c: Vector3, ext: Vector3) => {
+    for (const dx of [-ext.x, ext.x])
+      for (const dy of [-ext.y, ext.y])
+        for (const dz of [-ext.z, ext.z]) out.push(new Vector3(c.x + dx, c.y + dy, c.z + dz));
+  };
+  for (const g of [...def.geoms, ...(def.hornGeoms ?? [])]) {
+    // 球・円筒はローカルキューブ角を回すと最下点が最大√2〜√3倍深く出てしまう
+    // (回した脚パーツで顕著)。world軸での正確な範囲を取る(接地判定の精度に効く)
+    if (g.type === "sphere") {
+      const c = new Vector3(...(g.posMm ?? [0, 0, 0])).applyMatrix4(M);
+      pushAligned(c, new Vector3(g.radiusMm, g.radiusMm, g.radiusMm));
+      continue;
+    }
+    if (g.type === "cylinder") {
+      const c = new Vector3(...(g.posMm ?? [0, 0, 0])).applyMatrix4(M);
+      const a = new Vector3(...(g.axis ?? [0, 0, 1])).normalize().transformDirection(M);
+      const ext = new Vector3(
+        (g.heightMm / 2) * Math.abs(a.x) + g.radiusMm * Math.sqrt(Math.max(0, 1 - a.x * a.x)),
+        (g.heightMm / 2) * Math.abs(a.y) + g.radiusMm * Math.sqrt(Math.max(0, 1 - a.y * a.y)),
+        (g.heightMm / 2) * Math.abs(a.z) + g.radiusMm * Math.sqrt(Math.max(0, 1 - a.z * a.z))
+      );
+      pushAligned(c, ext);
+      continue;
+    }
     for (const c of geomBBoxCorners(g)) out.push(c.applyMatrix4(M));
+  }
   return out;
 }
 
