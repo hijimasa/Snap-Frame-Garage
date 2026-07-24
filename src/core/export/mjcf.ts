@@ -51,13 +51,17 @@ export function exportMjcf(data: ExportData): string {
   out.push(`<mujoco model="${model.name || "robot"}">`);
   out.push(`  <compiler angle="radian" inertiafromgeom="false"/>`);
   out.push(`  <option gravity="0 0 -9.81" timestep="0.002"/>`);
+  // ロボットの自己衝突は無効化し、床とだけ接触させる(contype/conaffinityのビット分け)。
+  // 穴ピン文法では可動接合部のパーツ同士が面で重なって組まれるため、自己衝突を有効に
+  // すると接合部の接触反力と等式制約(からくりのループ)が拮抗して寄生トルクを生む
+  // (クランクがctrl=0でも自走する等。ヤンセン機構の検証で実測)。
   out.push(`  <default>`);
-  out.push(`    <geom friction="1.0 0.005 0.0001" condim="3"/>`);
+  out.push(`    <geom friction="1.0 0.005 0.0001" condim="3" contype="2" conaffinity="1"/>`);
   out.push(`    <joint damping="0.01"/>`);
   out.push(`  </default>`);
   out.push(`  <worldbody>`);
   out.push(
-    `    <geom name="floor" type="plane" size="5 5 0.1" rgba="0.85 0.85 0.8 1" friction="1.0 0.005 0.0001"/>`
+    `    <geom name="floor" type="plane" contype="1" conaffinity="2" size="5 5 0.1" rgba="0.85 0.85 0.8 1" friction="1.0 0.005 0.0001"/>`
   );
 
   // 接地クリアランス:機体最下点を床に合わせる

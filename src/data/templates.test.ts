@@ -75,8 +75,8 @@ describe("ヤンセン4足＋前後補助キャスター", () => {
   it("8足版より軽量な4脚・2モータ・2キャスター構成になる", () => {
     const model = buildTemplate("strandbeest");
     expect(model.name).toBe("ヤンセンの4ほんあし＋補助輪");
-    expect(model.parts).toHaveLength(60);
-    expect(model.connections).toHaveLength(79);
+    expect(model.parts).toHaveLength(44);
+    expect(model.connections).toHaveLength(55);
     expect(model.parts.filter((p) => p.defId === "SV-WHEEL")).toHaveLength(2);
     expect(model.parts.filter((p) => p.defId === "WH-CAST")).toHaveLength(2);
     expect(new Set(model.parts.map((p) => p.tint).filter(Boolean))).toHaveProperty("size", 4);
@@ -112,6 +112,6 @@ describe("ヤンセン4足＋前後補助キャスター", () => {
     const mjcf = exportMjcf(buildExportData(buildTemplate("strandbeest")));
     expect(mjcf.match(/friction="0\.05 0\.001 0\.0001"/g)).toHaveLength(2);
     expect(mjcf.match(/<velocity name="act_servo_/g)).toHaveLength(2);
-    expect(mjcf.match(/<connect name="loop_/g)).toHaveLength(20);
+    expect(mjcf.match(/<connect name="loop_/g)).toHaveLength(12);
   });
 });

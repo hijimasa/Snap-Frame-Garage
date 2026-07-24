@@ -510,8 +510,12 @@ function jansenNodes(Qu: P2): { P: P2; Q: P2; B1: P2; B2: P2; C1: P2; C2: P2; F:
 const FINE_ANGLES = Array.from({ length: 180 }, (_, i) => i * 2); // 2°刻み(settleで仕上げる)
 
 /**
- * ヤンセン脚1本を組む。sidePlate上のP穴とクランクピンQから10本のほねを張り、
- * 5箇所の追いピンでループを閉じ、settleで厳密に整える。
+ * ヤンセン脚1本を組む。三角2枚は専用剛体パーツ(FR-JTB/FR-JTF)を使い、
+ * 残り4本のほねを張って3箇所の追いピンでループを閉じ、settleで厳密に整える。
+ *
+ * ほね10本+追いピン5本の版は、閉ループ等式制約同士の過拘束ファイトで
+ * シミュレータが寄生トルクを生み(ctrl=0でもクランクが自走)、実トルクでは
+ * 空転した。三角を剛体化するとループが5→3本に減り、実トルクで推進が出る。
  */
 function buildJansenLeg(
   t: Tpl,
@@ -556,23 +560,42 @@ function buildJansenLeg(
     return id;
   };
 
+  // 剛体三角B(P-B1-B2):Pで側板に1ピン(回る)。2軸の向き合わせで鏡像も自動選択
+  const triB = t.attach(sidePlate, Phole, "FR-JTB", g(0, 0), {
+    pins: 1,
+    orient: [
+      { axisLocal: [1, 0, 0], targetWorld: dir(n.P, n.B1) },
+      { axisLocal: [0.2, 0.98, 0], targetWorld: dir(n.P, n.B2) },
+    ],
+    angles: FINE_ANGLES,
+    trySide: true,
+    tint,
+  });
+  vars.push(t.lastConnId);
+
   const bJ = bar(crank, crankHole, "FR-B060", n.Q, n.B1, -sx as 1 | -1); // j=55
-  const bB = bar(sidePlate, Phole, "FR-B060", n.P, n.B1, sx); // b=50
-  const bE = bar(bB, g(0, 10), "FR-B060", n.B1, n.B2, sx); // e=55
-  const bD = bar(bE, g(0, 11), "FR-B045", n.B2, n.P, -sx as 1 | -1); // d=35
   const bC = bar(sidePlate, Phole, "FR-B045", n.P, n.C1, sx); // c=40
   const bK = bar(crank, crankHole, "FR-B075", n.Q, n.C1, -sx as 1 | -1); // k=60
-  const bG = bar(bC, g(0, 8), "FR-B045", n.C1, n.C2, sx); // g=40
-  const bH = bar(bG, g(0, 8), "FR-B075", n.C2, n.F, sx); // h=70
-  const bI = bar(bH, g(0, 14), "FR-B060", n.F, n.C1, -sx as 1 | -1); // i=50
-  const bF = bar(bD, g(0, 0), "FR-B045", n.B2, n.C2, sx); // f=40
+
+  // 剛体三角F(C1-C2-F):cほねの先端C1に1ピン
+  const triF = t.attach(bC, g(0, 8), "FR-JTF", g(0, 0), {
+    pins: 1,
+    orient: [
+      { axisLocal: [1, 0, 0], targetWorld: dir(n.C1, n.C2) },
+      { axisLocal: [-0.2, -0.98, 0], targetWorld: dir(n.C1, n.F) },
+    ],
+    angles: FINE_ANGLES,
+    trySide: true,
+    tint,
+  });
+  vars.push(t.lastConnId);
+
+  const bF = bar(triB, g(2, 0), "FR-B045", n.B2, n.C2, sx); // f=40
 
   const loops = [
-    t.pin(sidePlate, Phole, bD, g(0, 7)), // 三角B(b,e,d)をPで閉じる
-    t.pin(bE, g(0, 0), bJ, g(0, 11)), // B1: jの先端
+    t.pin(triB, g(1, 0), bJ, g(0, 11)), // B1: jの先端
     t.pin(bC, g(0, 8), bK, g(0, 12)), // C1: kの先端
-    t.pin(bC, g(0, 8), bI, g(0, 10)), // C1: 足三角(g,h,i)を閉じる
-    t.pin(bG, g(0, 8), bF, g(0, 8)), // C2: fの先端
+    t.pin(triF, g(1, 0), bF, g(0, 8)), // C2: fの先端
   ];
   const err = t.settle(vars, loops);
   if (err > 0.5) throw new Error(`jansen leg settle failed: ${err.toFixed(2)}mm`);
@@ -591,8 +614,9 @@ function buildJansenAssistCaster(t: Tpl, body: string, bodyCol: number, forward:
     angles: [0, 90, 180, 270],
     trySide: true,
   });
-  // 端から2穴内側(75mm落差)を使い、球底を脚の最下点と約1mm以内にそろえる。
-  const bottom = t.attach(drop, g(0, 15), "FR-L030", g(1, 4), {
+  // 落差70mm=球底を脚の接地アークより約5mm高くする。ここを下げすぎると
+  // キャスターが体重を受けてしまい、足が空滑りして歩けない(シミュレーション実測)。
+  const bottom = t.attach(drop, g(0, 14), "FR-L030", g(1, 4), {
     orient: [
       { axisLocal: [0, 0, -1], targetWorld: DOWN, weight: 2 },
       { axisLocal: [1, 0, 0], targetWorld: [0, forward, 0] },
